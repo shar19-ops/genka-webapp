@@ -79,7 +79,7 @@ function prevRealStage(stage) {
   return -1;
 }
 
-function advanceStampFlow(action) {
+async function advanceStampFlow(action) {
   const flow = currentProject.stampFlow;
   if (action === 'toConfirm') {
     flow.stage = 1;
@@ -100,9 +100,11 @@ function advanceStampFlow(action) {
     flow.stage = p;
   }
   saveProject(currentProject);
-  $('#saveStatus').textContent = '保存しました（' + new Date().toLocaleTimeString('ja-JP') + '）';
   renderStampInputs();
   renderStampBoxes();
+  // 提出・差し戻しのいずれも、次の方へTeams/メールで渡すためのファイル保存を伴う
+  await exportProjectToFile();
+  $('#saveStatus').textContent = '保存しました。Teams/メールで次の方へ送付してください（' + new Date().toLocaleTimeString('ja-JP') + '）';
 }
 
 function refreshStampAdvanceButtons() {
@@ -790,9 +792,11 @@ function scheduleAutosave() {
     $('#saveStatus').textContent = '自動保存しました（' + new Date().toLocaleTimeString('ja-JP') + '）';
   }, 800);
 }
-$('#saveBtn').addEventListener('click', () => {
+$('#saveBtn').addEventListener('click', async () => {
   saveProject(currentProject);
-  $('#saveStatus').textContent = '保存しました（' + new Date().toLocaleTimeString('ja-JP') + '）';
+  // 途中経過を任意の場所へファイル保存できるようにする（Teams/メール送付にも使える）
+  await exportProjectToFile();
+  $('#saveStatus').textContent = '保存しました。Teams/メールで送付する場合はこのファイルを添付してください（' + new Date().toLocaleTimeString('ja-JP') + '）';
 });
 
 // ---------------- 印刷 ----------------
@@ -879,7 +883,6 @@ async function openProjectFromFile(file) {
   }
 }
 
-$('#exportFileBtn').addEventListener('click', () => { exportProjectToFile(); });
 $('#openFileBtn').addEventListener('click', () => { $('#openFileInput').click(); });
 $('#openFileInput').addEventListener('change', (e) => {
   const file = e.target.files[0];

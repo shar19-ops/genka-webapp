@@ -6,7 +6,7 @@
 <title>原価計算表アプリ</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#2f6fed">
-<link rel="stylesheet" href="style.css?v=20260711n">
+<link rel="stylesheet" href="style.css?v=20260711o">
 </head>
 <body>
 <header class="topbar">
@@ -68,13 +68,12 @@
       <div class="project-meta-form" id="projectMetaForm"></div>
       <div class="toolbar">
         <button id="saveBtn" class="btn">保存</button>
-        <button id="exportFileBtn" class="btn">ファイルに保存（Teams/メール送付用）</button>
         <button id="printBtn" class="btn">A3で印刷 / PDF出力</button>
         <button id="csvBtn" class="btn">CSV出力</button>
         <button id="reimportBtn" class="btn">この工番にPDFを再取込</button>
         <span id="saveStatus" class="status"></span>
       </div>
-      <p class="hint">検印フローの受け渡しは「ファイルに保存」で書き出したファイルをTeamsやメールに添付して次の方へ送ってください。受け取った方はこのアプリを開き、上部の「ファイルを開く」（または対応ブラウザでは添付ファイルをダブルクリック）で読み込めます。</p>
+      <p class="hint">「保存」を押すと、このPCへの保存に加えて任意の場所へファイル保存できます。検印欄の「確認者へ提出」「承認者へ提出」「差し戻す」もファイル保存を兼ねています。保存したファイルをTeamsやメールに添付して次の方へ送ってください。受け取った方はこのアプリを開き、上部の「ファイルを開く」（または対応ブラウザでは添付ファイルをダブルクリック）で読み込めます。</p>
     </div>
 
     <div id="printSheet">
@@ -101,8 +100,8 @@
 </main>
 
 <script src="vendor/pdfjs/pdf.js"></script>
-<script src="pdf-parser.js?v=20260711n"></script>
-<script src="date-stamp.js?v=20260711n"></script>
-<script src="app.js?v=20260711n"></script>
+<script src="pdf-parser.js?v=20260711o"></script>
+<script src="date-stamp.js?v=20260711o"></script>
+<script src="app.js?v=20260711o"></script>
 </body>
 </html>
