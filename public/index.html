@@ -6,7 +6,7 @@
 <title>原価計算表アプリ</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#2f6fed">
-<link rel="stylesheet" href="style.css?v=20260712b">
+<link rel="stylesheet" href="style.css?v=20260712c">
 </head>
 <body>
 <header class="topbar">
@@ -28,7 +28,7 @@
   <!-- 取込パネル -->
   <section id="importPanel" class="panel">
     <h2>PDF取込</h2>
-    <p class="warning-banner">注意：枝番のPDFは取込まないように。また、枝番がある場合URLから読み込まないようにすること！</p>
+    <p class="warning-banner">注意：枝番のPDFは取込まないように。<span id="urlWarningClause">また、枝番がある場合URLから読み込まないようにすること！</span></p>
     <div class="tabs">
       <button class="tab-btn active" data-tab="file">ファイルから読み込む</button>
       <button class="tab-btn" data-tab="url">URLから読み込む</button>
@@ -101,8 +101,8 @@
 </main>
 
 <script src="vendor/pdfjs/pdf.js"></script>
-<script src="pdf-parser.js?v=20260712b"></script>
-<script src="date-stamp.js?v=20260712b"></script>
-<script src="app.js?v=20260712b"></script>
+<script src="pdf-parser.js?v=20260712c"></script>
+<script src="date-stamp.js?v=20260712c"></script>
+<script src="app.js?v=20260712c"></script>
 </body>
 </html>

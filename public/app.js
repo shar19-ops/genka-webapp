@@ -318,6 +318,8 @@ $$('.tab-btn').forEach((btn) => {
     const fileTabBtn = $('.tab-btn[data-tab="file"]');
     fileTabBtn.classList.add('active');
     $('.tab-content[data-tab-content="file"]').hidden = false;
+    // URLタブ自体が無いため、注意書きのURLに関する一文も表示しない
+    $('#urlWarningClause')?.remove();
   }
 })();
 
