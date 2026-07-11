@@ -1,0 +1,14 @@
+{
+  "name": "genka-webapp",
+  "version": "1.0.0",
+  "description": "原価計算表 Webアプリ（PDF取込・支出予定入力・自動計算・A3出力）",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "pdfjs-dist": "^3.11.174"
+  }
+}

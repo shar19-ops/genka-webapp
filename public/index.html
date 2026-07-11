@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
+<title>原価計算表アプリ</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2f6fed">
+<link rel="stylesheet" href="style.css?v=20260711n">
+</head>
+<body>
+<header class="topbar">
+  <h1>原価計算表アプリ</h1>
+  <div class="topbar-actions">
+    <label class="field-inline">
+      工番を開く
+      <select id="projectSelect"><option value="">-- 保存済みの工番を選択 --</option></select>
+    </label>
+    <button id="newImportBtn" class="btn">PDFを読み込む</button>
+    <button id="openFileBtn" class="btn">ファイルを開く</button>
+    <input type="file" id="openFileInput" accept=".json,application/json" hidden>
+  </div>
+</header>
+
+<main>
+
+  <!-- 取込パネル -->
+  <section id="importPanel" class="panel">
+    <h2>PDF取込</h2>
+    <p class="warning-banner">注意：枝番のPDFは取込まないように。また、枝番がある場合URLから読み込まないようにすること！</p>
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="file">ファイルから読み込む</button>
+      <button class="tab-btn" data-tab="url">URLから読み込む</button>
+    </div>
+
+    <div class="tab-content" data-tab-content="file">
+      <input type="file" id="fileInput" accept="application/pdf">
+      <p class="hint">PC/iPadの原価計算表PDFを選択してください。</p>
+    </div>
+    <div class="tab-content" data-tab-content="url" hidden>
+      <div class="url-row">
+        <input type="url" id="urlInput" placeholder="https://.../原価計算表.pdf">
+        <button id="urlFetchBtn" class="btn">取得する</button>
+      </div>
+      <p class="hint">社内ポータルやSharePointなどのPDF直リンクを貼り付けてください（サーバー経由で取得します）。</p>
+    </div>
+
+    <p id="importStatus" class="status"></p>
+
+    <div id="previewArea" hidden>
+      <h3>取込プレビュー（内容を確認・修正してから取り込んでください）</h3>
+      <div class="meta-edit-grid" id="metaEditGrid"></div>
+      <div class="preview-summary" id="previewSummary"></div>
+      <details>
+        <summary>抽出した生テキスト（デバッグ用）</summary>
+        <pre id="rawLinesView" class="raw-lines"></pre>
+      </details>
+      <div class="preview-actions">
+        <button id="commitImportBtn" class="btn primary">この内容で取り込む</button>
+        <button id="cancelImportBtn" class="btn">キャンセル</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- メイン表示 -->
+  <section id="mainView" class="panel" hidden>
+    <div class="project-header no-print">
+      <div class="project-meta-form" id="projectMetaForm"></div>
+      <div class="toolbar">
+        <button id="saveBtn" class="btn">保存</button>
+        <button id="exportFileBtn" class="btn">ファイルに保存（Teams/メール送付用）</button>
+        <button id="printBtn" class="btn">A3で印刷 / PDF出力</button>
+        <button id="csvBtn" class="btn">CSV出力</button>
+        <button id="reimportBtn" class="btn">この工番にPDFを再取込</button>
+        <span id="saveStatus" class="status"></span>
+      </div>
+      <p class="hint">検印フローの受け渡しは「ファイルに保存」で書き出したファイルをTeamsやメールに添付して次の方へ送ってください。受け取った方はこのアプリを開き、上部の「ファイルを開く」（または対応ブラウザでは添付ファイルをダブルクリック）で読み込めます。</p>
+    </div>
+
+    <div id="printSheet">
+      <div id="sectionsContainer"></div>
+      <div id="finalPage">
+        <table class="totals-table" id="grandTotalTable"></table>
+        <div class="summary-cards" id="summaryCards"></div>
+        <div class="stamp-boxes">
+          <div class="stamp-cell"></div><div class="stamp-cell"></div><div class="stamp-cell"></div>
+          <div class="stamp-cell"></div><div class="stamp-cell"></div><div class="stamp-cell"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stamp-input-panel no-print">
+      <div class="stamp-input-panel-title">検印欄（社内確認印）</div>
+      <p class="hint">苗字を入力すると出力の判子欄にデート印が押印されます（支店長の場合は、支店名を苗字欄に記載する）。確認日を空欄のままにすると当日の日付が使用されます。押印は担当者→確認→承認の順に1段ずつ解放され、直前の段を保存するまで次の段は入力できません。「差し戻す」を押すと1つ前の段に戻り、差し戻した段・差し戻された段の押印はクリアされ再入力が必要になります。</p>
+      <div class="stamp-input-grid" id="stampInputGrid"></div>
+      <div class="stamp-flow-actions" id="stampFlowActions"></div>
+      <p class="stamp-beta-note">※ワークフローはβ版のため対応してません。担当者→工事長までとします。工事長は紙ベースで提出するように。</p>
+    </div>
+  </section>
+
+</main>
+
+<script src="vendor/pdfjs/pdf.js"></script>
+<script src="pdf-parser.js?v=20260711n"></script>
+<script src="date-stamp.js?v=20260711n"></script>
+<script src="app.js?v=20260711n"></script>
+</body>
+</html>
