@@ -81,14 +81,31 @@ function prevRealStage(stage) {
 
 async function advanceStampFlow(action) {
   const flow = currentProject.stampFlow;
-  if (action === 'toConfirm') {
-    flow.stage = 1;
-  } else if (action === 'addConfirm') {
-    flow.stage = Math.min(flow.stage + 1, 4);
-  } else if (action === 'toApproval') {
-    for (let i = flow.stage + 1; i <= 4; i++) if (!flow.skipped.includes(i)) flow.skipped.push(i);
-    flow.stage = 5;
-  } else if (action === 'finish') {
+  const submitterName = (currentProject.stampSlots[flow.stage]?.name || '').trim();
+  const isSubmit = action === 'toConfirm' || action === 'addConfirm' || action === 'toApproval';
+
+  if (isSubmit) {
+    // 提出系（確認者へ提出／承認者へ提出）: ローカル側は提出前の内容のまま据え置き、
+    // 書き出すファイルだけ次の段へ進んだ状態にする。提出後はこのアプリを閉じ、
+    // 再度開いた場合は提出前の状態（自分の入力内容はそのまま）が表示されるようにする。
+    const exported = JSON.parse(JSON.stringify(currentProject));
+    const exportedFlow = exported.stampFlow;
+    if (action === 'toConfirm') {
+      exportedFlow.stage = 1;
+    } else if (action === 'addConfirm') {
+      exportedFlow.stage = Math.min(exportedFlow.stage + 1, 4);
+    } else if (action === 'toApproval') {
+      for (let i = exportedFlow.stage + 1; i <= 4; i++) if (!exportedFlow.skipped.includes(i)) exportedFlow.skipped.push(i);
+      exportedFlow.stage = 5;
+    }
+    saveProject(currentProject);
+    await exportProjectToFile(exported, submitterName);
+    $('#saveStatus').textContent = '保存しました。Teams/メールで次の方へ送付してください。このアプリを閉じます（' + new Date().toLocaleTimeString('ja-JP') + '）';
+    closeAppWindow();
+    return;
+  }
+
+  if (action === 'finish') {
     flow.stage = 6;
   } else if (action === 'reject') {
     const p = prevRealStage(flow.stage);
@@ -102,8 +119,8 @@ async function advanceStampFlow(action) {
   saveProject(currentProject);
   renderStampInputs();
   renderStampBoxes();
-  // 提出・差し戻しのいずれも、次の方へTeams/メールで渡すためのファイル保存を伴う
-  await exportProjectToFile();
+  // 差し戻し・完了も、次の方（または記録用）へTeams/メールで渡すためのファイル保存を伴う
+  await exportProjectToFile(currentProject, submitterName);
   $('#saveStatus').textContent = '保存しました。Teams/メールで次の方へ送付してください（' + new Date().toLocaleTimeString('ja-JP') + '）';
 }
 
@@ -837,9 +854,30 @@ function sanitizeFilename(name) {
   return String(name ?? '').replace(/[\\/:*?"<>|]/g, '_');
 }
 
-async function exportProjectToFile() {
-  const p = currentProject;
-  const filename = sanitizeFilename(`原価計算表_${p.koban}`) + '.json';
+// ファイル名規則: 工番_原価計算書_日付_苗字.json （苗字は提出者本人の欄が空欄なら空欄のまま）
+function buildExportFilename(project, submitterName) {
+  const koban = sanitizeFilename(project.koban || '');
+  const date = todayIso();
+  const name = sanitizeFilename((submitterName || '').trim());
+  return `${koban}_原価計算書_${date}_${name}.json`;
+}
+
+function closeAppWindow() {
+  window.close();
+  // window.close()はスクリプトから開いたタブ以外では多くのブラウザが無視するため、
+  // 閉じられなかった場合は手動で閉じるよう案内する。
+  setTimeout(() => {
+    if (!window.closed) {
+      const el = $('#saveStatus');
+      if (el) el.textContent += '（自動で閉じられない場合は、このタブを手動で閉じてください）';
+    }
+  }, 300);
+}
+
+async function exportProjectToFile(project = currentProject, submitterName = null) {
+  const p = project;
+  const name = submitterName != null ? submitterName : (p.stampSlots?.[p.stampFlow?.stage]?.name || '');
+  const filename = buildExportFilename(p, name);
   const blob = new Blob([JSON.stringify(p, null, 2)], { type: 'application/json' });
 
   if (window.showSaveFilePicker) {
