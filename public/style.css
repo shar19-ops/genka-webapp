@@ -34,6 +34,7 @@ body {
   gap: 0.5rem;
 }
 .topbar h1 { font-size: 1.15rem; margin: 0; }
+.app-version { font-size: 0.7rem; font-weight: 400; color: var(--muted); vertical-align: middle; margin-left: 0.3rem; }
 .topbar-actions { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
 .field-inline { display: flex; align-items: center; gap: 0.4rem; font-size: 0.9rem; color: var(--muted); }
 
