@@ -3,7 +3,7 @@
 // 座標(x,y)を基準に行を再構成してから列を読み取る。
 (function (global) {
   const CODE_RE = /^([A-Z0-9][0-9A-Z][0-9A-Z])\s+(.+)$/;
-  const NUM_RE = /\d{1,3}(?:,\d{3})*/g;
+  const NUM_RE = /-?\d{1,3}(?:,\d{3})*/g;
   const KOBAN_RE = /^\d{2}-\d{3,5}/;
 
   async function loadPdf(arrayBuffer) {
