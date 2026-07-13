@@ -19,6 +19,7 @@
     <button id="newImportBtn" class="btn">PDFを読み込む</button>
     <button id="openFileBtn" class="btn">ファイルを開く</button>
     <input type="file" id="openFileInput" accept=".json,application/json" hidden>
+    <button id="manageProjectsBtn" class="btn">工番を削除</button>
     <a href="manual.html" target="_blank" rel="noopener" class="btn">使い方</a>
   </div>
 </header>
@@ -61,6 +62,20 @@
         <button id="cancelImportBtn" class="btn">キャンセル</button>
       </div>
     </div>
+  </section>
+
+  <!-- 工番削除パネル -->
+  <section id="deletePanel" class="panel" hidden>
+    <h2>保存済み工番の削除</h2>
+    <p class="hint">削除すると、このPC（ブラウザ）に保存されているデータは元に戻せません。ファイルに保存済みのバックアップがあれば「ファイルを開く」で復元できます。</p>
+    <div class="delete-list-actions">
+      <button id="deleteSelectAllBtn" class="btn">すべて選択</button>
+      <button id="deleteSelectNoneBtn" class="btn">選択解除</button>
+      <button id="deleteSelectedBtn" class="btn danger" disabled>選択した工番を削除</button>
+      <button id="deletePanelCloseBtn" class="btn">閉じる</button>
+    </div>
+    <p id="deleteStatus" class="status"></p>
+    <div id="deleteProjectList" class="delete-project-list"></div>
   </section>
 
   <!-- メイン表示 -->

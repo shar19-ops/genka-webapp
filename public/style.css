@@ -95,6 +95,19 @@ select, input[type=text], input[type=url], input[type=number], input[type=file] 
 .status.error { color: var(--danger); }
 .status.ok { color: var(--ok); }
 
+.delete-list-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.75rem 0; }
+.delete-project-list { display: flex; flex-direction: column; border-top: 1px solid var(--border); }
+.delete-project-row {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.6rem 0.2rem; border-bottom: 1px solid var(--border); font-size: 0.9rem;
+}
+.delete-project-row:nth-child(even) { background: var(--row-alt); }
+.delete-project-row .dp-koban { font-weight: 700; flex: 0 0 6em; }
+.delete-project-row .dp-kenmei { flex: 1 1 auto; color: var(--text); }
+.delete-project-row .dp-tokuisaki { flex: 1 1 auto; color: var(--muted); }
+.delete-project-row .dp-updated { flex: 0 0 auto; color: var(--muted); font-size: 0.8rem; }
+.delete-project-empty { color: var(--muted); padding: 0.75rem 0.2rem; }
+
 .meta-edit-grid {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 0.6rem; margin: 0.75rem 0;
@@ -209,7 +222,7 @@ table.item-table input.custom-name-input { width: 100%; min-width: 120px; text-a
 }
 .summary-card { border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; background: #fafbfc; }
 .summary-card .label { font-size: 0.78rem; color: var(--muted); }
-.summary-card .value { font-size: 1.15rem; font-weight: 700; margin-top: 0.2rem; }
+.summary-card .value { font-size: 1.15rem; font-weight: 700; margin-top: 0.2rem; text-align: right; }
 /* 最終原価・最終粗利率は枠線を強調して目立たせる */
 .summary-final-group .summary-card { border: 2px solid #000; background: #fff; }
 .badge { display: inline-block; padding: 0.1rem 0.5rem; border-radius: 999px; font-size: 0.75rem; font-weight: 700; }
@@ -278,8 +291,17 @@ table.item-table input.custom-name-input { width: 100%; min-width: 120px; text-a
   .summary-final-group { grid-template-columns: repeat(2, minmax(140px, 220px)) !important; margin-left: auto !important; }
   .totals-table td { padding: 1mm 1.5mm; font-size: 10.5pt; border-color: #999; }
 
-  /* 今後の支出予定・追加工事予算の列は外周を黒枠にして目立たせる
-     （通常行の罫線を細目にするルールより確実に優先させるためimportantを付与） */
+  /* 今後の支出予定・追加工事予算の列は外周を黒枠＋淡いグレーの背景にして目立たせる
+     （通常行の罫線を細目にするルールより確実に優先させるためimportantを付与）。
+     Chromeは印刷時に既定で背景色を省略することがあるため、print-color-adjustで
+     背景を確実に出す（ユーザーが印刷ダイアログの「背景のグラフィック」を
+     オフにしていても反映される）。 */
+  table.item-table th.col-tsuika, table.item-table td.col-tsuika,
+  table.item-table th.col-yotei, table.item-table td.col-yotei,
+  .totals-table td.col-tsuika, .totals-table td.col-yotei {
+    background: #e3e5e9 !important;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
   table.item-table th.col-tsuika, table.item-table td.col-tsuika,
   table.item-table th.col-yotei, table.item-table td.col-yotei,
   .totals-table td.col-tsuika, .totals-table td.col-yotei {
@@ -303,10 +325,12 @@ table.item-table input.custom-name-input { width: 100%; min-width: 120px; text-a
   }
 
   /* 合計・サマリー・押印欄は強制改ページせず、最後の区分の直後に続けて配置する
-     （ページ数を抑えるため）。押印欄は控えめな上余白のみで区切る。 */
+     （ページ数を抑えるため）。押印欄は、最終原価・最終粗利率カード（1段目）の下、
+     予定追加工事系カード（2段目）の右側に生まれる余白に重なるように上へ詰めて
+     配置し、ページ全体の高さを抑える（負のmargin-topで引き上げる）。 */
   .stamp-boxes {
     display: flex; gap: 0; page-break-inside: avoid;
-    justify-content: flex-end; margin-top: 8mm;
+    justify-content: flex-end; margin-top: -19.6mm;
   }
   .stamp-boxes .stamp-cell {
     width: 2cm; height: 2cm; border: 1px solid #000; border-left: none;
@@ -314,5 +338,13 @@ table.item-table input.custom-name-input { width: 100%; min-width: 120px; text-a
   }
   .stamp-boxes .stamp-cell:first-child { border-left: 1px solid #000; }
 
-  @page { size: A3 landscape; margin: 12mm; }
+  @page {
+    size: A3 landscape; margin: 12mm;
+    @bottom-center {
+      content: "ページ " counter(page) " / " counter(pages);
+      font-family: "Yu Gothic", "Hiragino Sans", "Meiryo", sans-serif;
+      font-size: 8pt;
+      color: #000;
+    }
+  }
 }

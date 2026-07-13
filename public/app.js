@@ -15,6 +15,14 @@ function yen(n) {
   return Number(n).toLocaleString('ja-JP');
 }
 
+// yen()の結果に¥記号を付ける。マイナスの場合は「-¥1,234」ではなく「¥-1,234」に
+// ならないよう、符号を¥記号より前に出す。
+function yenMark(n) {
+  const s = yen(n);
+  if (!s) return s;
+  return s.startsWith('-') ? '-¥' + s.slice(1) : '¥' + s;
+}
+
 // 粗利率表示: 小数点第2位以下は切り捨て、小数点第1位までを%で表示する
 function formatRate(rate) {
   if (rate === null || rate === undefined || Number.isNaN(rate)) return '-';
@@ -292,6 +300,77 @@ function renderProjectSelect() {
     idx.map((p) => `<option value="${p.koban}">${p.koban} ${p.kenmei || ''}</option>`).join('');
 }
 
+// ---------------- 工番の削除 ----------------
+function formatUpdatedAt(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
+function refreshDeleteSelectedButton() {
+  const checked = $$('.dp-checkbox:checked', $('#deleteProjectList'));
+  $('#deleteSelectedBtn').disabled = checked.length === 0;
+}
+
+function renderDeleteProjectList() {
+  const listEl = $('#deleteProjectList');
+  const idx = loadIndex().sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
+  if (!idx.length) {
+    listEl.innerHTML = '<p class="delete-project-empty">保存済みの工番はありません。</p>';
+    $('#deleteSelectedBtn').disabled = true;
+    return;
+  }
+  listEl.innerHTML = idx.map((p) => `
+    <label class="delete-project-row">
+      <input type="checkbox" class="dp-checkbox" value="${escapeHtml(p.koban)}">
+      <span class="dp-koban">${escapeHtml(p.koban)}</span>
+      <span class="dp-kenmei">${escapeHtml(p.kenmei || '')}</span>
+      <span class="dp-tokuisaki">${escapeHtml(p.tokuisaki || '')}</span>
+      <span class="dp-updated">${formatUpdatedAt(p.updatedAt)}</span>
+    </label>`).join('');
+  $$('.dp-checkbox', listEl).forEach((cb) => cb.addEventListener('change', refreshDeleteSelectedButton));
+  refreshDeleteSelectedButton();
+}
+
+function openDeletePanel() {
+  $('#importPanel').hidden = true;
+  $('#mainView').hidden = true;
+  $('#deletePanel').hidden = false;
+  $('#deleteStatus').textContent = '';
+  renderDeleteProjectList();
+}
+
+function closeDeletePanel() {
+  $('#deletePanel').hidden = true;
+  if (currentProject) showMainView();
+  else $('#importPanel').hidden = false;
+}
+
+$('#manageProjectsBtn').addEventListener('click', openDeletePanel);
+$('#deletePanelCloseBtn').addEventListener('click', closeDeletePanel);
+$('#deleteSelectAllBtn').addEventListener('click', () => {
+  $$('.dp-checkbox', $('#deleteProjectList')).forEach((cb) => { cb.checked = true; });
+  refreshDeleteSelectedButton();
+});
+$('#deleteSelectNoneBtn').addEventListener('click', () => {
+  $$('.dp-checkbox', $('#deleteProjectList')).forEach((cb) => { cb.checked = false; });
+  refreshDeleteSelectedButton();
+});
+$('#deleteSelectedBtn').addEventListener('click', () => {
+  const checked = $$('.dp-checkbox:checked', $('#deleteProjectList')).map((cb) => cb.value);
+  if (!checked.length) return;
+  const ok = confirm(`${checked.length}件の工番を削除します（${checked.join(', ')}）。\nこの操作は元に戻せません。よろしいですか？`);
+  if (!ok) return;
+  checked.forEach((koban) => localStorage.removeItem(STORAGE_PROJECT_PREFIX + koban));
+  saveIndex(loadIndex().filter((p) => !checked.includes(p.koban)));
+  renderProjectSelect();
+  if (currentProject && checked.includes(currentProject.koban)) currentProject = null;
+  renderDeleteProjectList();
+  $('#deleteStatus').textContent = `${checked.length}件削除しました。`;
+  $('#deleteStatus').className = 'status ok';
+});
+
 // ---------------- タブ切り替え ----------------
 $$('.tab-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
@@ -487,12 +566,14 @@ $('#projectSelect').addEventListener('change', (e) => {
 $('#newImportBtn').addEventListener('click', () => {
   reimportTargetKoban = null;
   $('#mainView').hidden = true;
+  $('#deletePanel').hidden = true;
   $('#importPanel').hidden = false;
   $('#importPanel').scrollIntoView({ behavior: 'smooth' });
 });
 
 $('#reimportBtn').addEventListener('click', () => {
   reimportTargetKoban = currentProject.koban;
+  $('#deletePanel').hidden = true;
   $('#importPanel').hidden = false;
   $('#importPanel').scrollIntoView({ behavior: 'smooth' });
   setStatus(`工番「${reimportTargetKoban}」に新しいPDFを取り込みます。`);
@@ -501,6 +582,7 @@ $('#reimportBtn').addEventListener('click', () => {
 // ---------------- メイン表示 ----------------
 function showMainView() {
   $('#importPanel').hidden = true;
+  $('#deletePanel').hidden = true;
   $('#mainView').hidden = false;
   renderMainView();
 }
@@ -783,15 +865,15 @@ function renderTotalsAndSummary() {
   // 追加工事実行金額・追加工事粗利率を対になるよう並べる。最終原価・最終粗利率は
   // 別グループとして右側に配置する。
   const pairCards = [
-    ['契約金額', yen(keiyaku)],
-    ['実行合計', yen(grand.jikkou)],
+    ['契約金額', yenMark(keiyaku)],
+    ['実行合計', yenMark(grand.jikkou)],
     ['実行粗利率', formatRate(jikkouArariRate)],
-    ['予定追加工事契約金額', yen(tsuikaKeiyaku)],
-    ['追加工事実行金額', yen(grand.tsuikaKoji)],
+    ['予定追加工事契約金額', yenMark(tsuikaKeiyaku)],
+    ['追加工事実行金額', yenMark(grand.tsuikaKoji)],
     ['追加工事粗利率', formatRate(tsuikaArariRate)],
   ];
   const finalCards = [
-    ['最終原価(①＋②)', yen(saishuuGenka)],
+    ['最終原価(①＋②)', yenMark(saishuuGenka)],
     ['最終粗利率', formatRate(saishuuArariRate)],
   ];
   const cardHtml = ([label, value]) => `
