@@ -397,8 +397,6 @@ $$('.tab-btn').forEach((btn) => {
     const fileTabBtn = $('.tab-btn[data-tab="file"]');
     fileTabBtn.classList.add('active');
     $('.tab-content[data-tab-content="file"]').hidden = false;
-    // URLタブ自体が無いため、注意書きのURLに関する一文も表示しない
-    $('#urlWarningClause')?.remove();
   }
 })();
 
@@ -592,8 +590,23 @@ function calcItem(it) {
   const yotei = Number(it.yoteiShishutsu) || 0;
   const tsuika = Number(it.tsuikaKoji) || 0;
   const yosanZangaku = Number(it.yosanZangaku) || 0;
+  const genka = Number(it.genka) || 0;
+  const jikkou = Number(it.jikkou) || 0;
   // 差引後残額 = (予算残額＋追加工事予算) － 今後の支出予定
-  return { ...it, sabikigo: (yosanZangaku + tsuika) - yotei };
+  // 使用率 = (原価合計＋今後の支出予定) ÷ (実行合計＋追加工事予算)
+  // 分母が0の場合、分子も0なら未使用扱い(0)、分子が正なら予算ゼロに対する支出があるとみなし
+  // 100%超過（赤字）扱いにする。
+  const usageDenom = jikkou + tsuika;
+  const usageNumer = genka + yotei;
+  const usageRatio = usageDenom !== 0 ? usageNumer / usageDenom : (usageNumer > 0 ? Infinity : 0);
+  return { ...it, sabikigo: (yosanZangaku + tsuika) - yotei, usageRatio };
+}
+
+// 使用率に応じた行の色分けクラス。100%超過(赤字)を優先し、90%以上なら青字。
+function usageRowClass(usageRatio) {
+  if (usageRatio > 1) return 'usage-over';
+  if (usageRatio >= 0.9) return 'usage-high';
+  return '';
 }
 
 function sumSection(items) {
@@ -668,6 +681,7 @@ function renderMainView() {
       <thead>
         <tr class="doc-title-row"><th colspan="10">＊＊ 原　価　計　算　表 ＊＊</th></tr>
         <tr class="doc-meta-row"><th colspan="10">${metaLine}</th></tr>
+        <tr class="legend-row"><th colspan="10">凡例：使用率90％以上の項目は<span class="legend-blue">青字</span>、100％を超えた項目は<span class="legend-red">赤字</span>で表示しています。</th></tr>
         <tr class="col-header-row">
           <th class="name-col">項目名</th>
           <th>実行合計</th><th>原価合計</th><th>支払額</th><th>未払額</th>
@@ -728,7 +742,7 @@ function renderSectionRows(secIdx) {
           <span class="row-name-text">${escapeHtml(it.code)} ${escapeHtml(it.name)}</span>
         </td>`;
 
-    return `<tr data-item="${itemIdx}" class="${it.isCustom ? 'custom-row' : ''}">
+    return `<tr data-item="${itemIdx}" class="${it.isCustom ? 'custom-row' : ''} ${usageRowClass(calced.usageRatio)}">
       ${nameCell}
       ${numCellHtml(it, 'jikkou', it.isCustom)}
       ${numCellHtml(it, 'genka', it.isCustom)}
@@ -760,6 +774,9 @@ function renderSectionRows(secIdx) {
       const cell = row.querySelector('.sabikigo-cell');
       cell.textContent = yen(calced.sabikigo);
       cell.classList.toggle('neg', calced.sabikigo < 0);
+      row.classList.remove('usage-high', 'usage-over');
+      const usageClass = usageRowClass(calced.usageRatio);
+      if (usageClass) row.classList.add(usageClass);
       renderSectionFooter(secIdx);
       renderTotalsAndSummary();
       scheduleAutosave();

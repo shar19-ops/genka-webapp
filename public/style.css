@@ -92,6 +92,11 @@ select, input[type=text], input[type=url], input[type=number], input[type=file] 
   background: #fdecec; border: 1px solid var(--danger); border-radius: 6px;
   padding: 0.6rem 0.8rem; margin: 0 0 0.75rem;
 }
+.info-banner {
+  color: var(--ok); font-weight: 700; font-size: 0.9rem;
+  background: #e3f7ea; border: 1px solid var(--ok); border-radius: 6px;
+  padding: 0.6rem 0.8rem; margin: 0 0 0.75rem;
+}
 .status { font-size: 0.85rem; color: var(--muted); min-height: 1.2em; }
 .status.error { color: var(--danger); }
 .status.ok { color: var(--ok); }
@@ -140,6 +145,13 @@ table.item-table th, table.item-table td {
 table.item-table th { background: var(--header-bg); text-align: center; }
 table.item-table td.name-cell, table.item-table th.name-col { text-align: left; white-space: normal; min-width: 140px; }
 table.item-table thead tr.doc-title-row, table.item-table thead tr.doc-meta-row { display: none; }
+table.item-table thead tr.legend-row th {
+  text-align: left; font-weight: 700; font-size: 0.95rem; color: var(--text);
+  background: #fff8e1; border: 1px solid #f0d878; border-left: none; border-right: none;
+  padding: 0.45rem 0.6rem;
+}
+.legend-blue { color: var(--accent-dark); }
+.legend-red { color: var(--danger); }
 table.item-table tr.section-title-row td {
   text-align: left; font-size: 1rem; font-weight: 700; background: #dbe4f7; padding: 0.5rem 0.6rem;
 }
@@ -159,6 +171,10 @@ table.item-table input.custom-name-input:focus { border-color: var(--accent); ou
 table.item-table input[type=text].memo-input,
 table.item-table input.custom-name-input { width: 100%; min-width: 120px; text-align: left; background: #fffbe8; border: 1px solid transparent; }
 .neg { color: var(--danger); font-weight: 600; }
+/* 使用率 = (原価合計＋今後の支出予定)÷(実行合計＋追加工事予算)。90%以上は青字、100%超過は赤字。
+   画面・印刷の両方に適用するため@media printでは分けず、ここに1つだけ定義する。 */
+tr.usage-high td, tr.usage-high input { color: var(--accent-dark); font-weight: 600; }
+tr.usage-over td, tr.usage-over input { color: var(--danger); font-weight: 600; }
 
 .row-actions { display: inline-flex; gap: 0.25rem; margin-right: 0.35rem; vertical-align: middle; }
 .row-del-btn {
@@ -265,7 +281,12 @@ table.item-table input.custom-name-input { width: 100%; min-width: 120px; text-a
   table.item-table thead tr.doc-meta-row {
     display: table-row; text-align: left; font-size: 9pt; font-weight: 400;
   }
-  table.item-table thead tr.doc-meta-row th { padding: 0.5mm 1mm 1.5mm; border: none; border-bottom: 1px solid #000; text-align: left; }
+  table.item-table thead tr.doc-meta-row th { padding: 0.5mm 1mm 1.5mm; border: none; text-align: left; }
+  table.item-table thead tr.legend-row th {
+    font-size: 9pt; font-weight: 700; color: #000;
+    background: #fff8e1 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    padding: 0.8mm 1mm; border: none; border-bottom: 1px solid #000; text-align: left;
+  }
 
   table.item-table tr.section-title-row td { font-size: 10.5pt; padding: 0.8mm 1mm; }
   table.item-table { min-width: 0; width: 100%; font-size: 9.5pt; }
