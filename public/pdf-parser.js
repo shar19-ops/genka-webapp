@@ -159,6 +159,19 @@
     return KOBAN_RE.test(line.trim());
   }
 
+  // 1ページ目の帳票見出し行（例:"本 店 ＊ ＊ 原 価 計 算 表 ＊ ＊ 2026.07.17 PAGE 1 PLMT6C"）から、
+  // 印刷時に「引用元」として表示する文字列を作る。ページ番号(PAGE n)は除外する。
+  // 全角文字は1文字ずつ空白を挟んで描画されるため、全角文字同士の間の空白のみ詰める
+  // （日付・PAGE表記など半角文字まわりの空白はトークンの区切りとして必要なため残す）。
+  function extractSourceHeader(page1Rows) {
+    const headerRow = (page1Rows || []).find((r) => /PAGE\s*\d+/i.test(r.text.replace(/\s/g, '')));
+    if (!headerRow) return null;
+    let text = headerRow.text.replace(/PAGE\s*\d+/i, '');
+    text = text.replace(/([^\x00-\x7F])\s+(?=[^\x00-\x7F])/g, '$1');
+    text = text.replace(/\s+/g, ' ').trim();
+    return text || null;
+  }
+
   const META_LABEL_MAP = [
     ['koban', '工番'],
     ['tokuisaki', '得意先名'],
@@ -215,12 +228,15 @@
   async function parsePdf(arrayBuffer) {
     const pdf = await loadPdf(arrayBuffer);
     const allRows = [];
+    let page1Rows = null;
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const rows = await extractRows(page);
+      if (i === 1) page1Rows = rows;
       allRows.push(...rows);
     }
     const allLines = allRows.map((r) => r.text);
+    const sourceHeader = extractSourceHeader(page1Rows);
 
     // ヘッダーのラベル行（"工番"と"得意先名"を含む行）の直後を値行とみなし、
     // x座標を基準に列を振り分けてメタ情報を取り出す。
@@ -293,6 +309,7 @@
       footer,
       sections,
       rawLines: allLines,
+      sourceHeader,
     };
   }
 

@@ -209,6 +209,7 @@ table.item-table input.custom-name-input { width: 100%; min-width: 120px; text-a
 .totals-table tr.totals-value-row td { font-weight: 700; }
 
 .stamp-boxes { display: none; }
+.source-citation { display: none; }
 
 /* 左：契約金額/実行合計/実行粗利率と、その直下に対になる追加工事系カードの3列グリッド
    （幅は内容に応じた固定サイズとし、伸長させない）。
@@ -338,6 +339,13 @@ table.item-table input.custom-name-input { width: 100%; min-width: 120px; text-a
     box-sizing: border-box; display: flex; align-items: center; justify-content: center;
   }
   .stamp-boxes .stamp-cell:first-child { border-left: 1px solid #000; }
+
+  /* 取込元PDFの帳票見出し（"本店＊＊原価計算表＊＊ 2026.07.17 PLMT6C"のような行から
+     ページ番号を除いたもの）を、押印欄の下に出典として小さく表示する。 */
+  .source-citation {
+    display: block; margin-top: 2mm; font-size: 7.5pt; color: #555;
+    text-align: right; page-break-inside: avoid;
+  }
 
   @page {
     size: A3 landscape; margin: 12mm;

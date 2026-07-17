@@ -539,6 +539,7 @@ $('#commitImportBtn').addEventListener('click', () => {
       })),
     })),
     sourceInfo: pendingParseResult.sourceInfo,
+    sourceHeader: pendingParseResult.sourceHeader,
   };
 
   saveProject(project);
@@ -679,6 +680,7 @@ function renderMainView() {
   renderTotalsAndSummary();
   renderStampInputs();
   renderStampBoxes();
+  $('#sourceCitation').textContent = p.sourceHeader ? `引用元：「${p.sourceHeader}」より` : '';
 }
 
 function renderSections() {
