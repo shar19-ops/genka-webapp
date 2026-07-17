@@ -227,14 +227,20 @@
 
   async function parsePdf(arrayBuffer) {
     const pdf = await loadPdf(arrayBuffer);
-    const allRows = [];
-    let page1Rows = null;
+    const pagesRows = [];
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
-      const rows = await extractRows(page);
-      if (i === 1) page1Rows = rows;
-      allRows.push(...rows);
+      pagesRows.push(await extractRows(page));
     }
+    const page1Rows = pagesRows[0] || null;
+    // 帳票の版によっては、メインの集計（工番全体の合計）に続けて、枝番ごとの内訳
+    // （"< 23-0081 >  < 23-0081A >" のような山括弧付き見出し行で始まり、実行金額/工事原価/
+    // 支払額の列が2組横並びになる別形式）が同じPDFの後続ページに含まれることがある。
+    // 列構成が異なり通常の解析ロジックでは正しく読めない（誤集計の原因になる）ため、
+    // この山括弧付き見出し行が最初に現れるページ以降は丸ごと解析対象から除外する。
+    const branchPageIdx = pagesRows.findIndex((rows) => rows.some((r) => /<[^<>]+>/.test(r.text)));
+    const usablePages = branchPageIdx >= 0 ? pagesRows.slice(0, branchPageIdx) : pagesRows;
+    const allRows = usablePages.flat();
     const allLines = allRows.map((r) => r.text);
     const sourceHeader = extractSourceHeader(page1Rows);
 
