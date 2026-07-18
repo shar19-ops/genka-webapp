@@ -299,6 +299,8 @@ function ippanzaiPrevRealStage(stage) {
   return -1;
 }
 
+// ファイル名規則: 工番_一般材警告書_日付(YYYY-MM-DD)_苗字.json （苗字は提出者本人の欄が空欄なら空欄のまま。
+// 原価計算表本体のbuildExportFilename()と対称のルール）
 function buildIppanzaiExportFilename(project, submitterName) {
   const koban = sanitizeFilename(project.koban || '');
   const date = todayIso();
