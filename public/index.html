@@ -6,11 +6,11 @@
 <title>原価計算表アプリ</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#2f6fed">
-<link rel="stylesheet" href="style.css?v=20260717e">
+<link rel="stylesheet" href="style.css?v=20260718k">
 </head>
 <body>
 <header class="topbar">
-  <h1>原価計算表アプリ <span class="app-version">v20260717e</span></h1>
+  <h1>原価計算表アプリ <span class="app-version">v20260718a</span></h1>
   <div class="topbar-actions">
     <label class="field-inline">
       工番を開く
@@ -33,6 +33,7 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="file">ファイルから読み込む</button>
       <button class="tab-btn" data-tab="url">URLから読み込む</button>
+      <button class="tab-btn" data-tab="folder">フォルダから一括取込む</button>
     </div>
 
     <div class="tab-content" data-tab-content="file">
@@ -46,6 +47,14 @@
       </div>
       <p class="hint">社内ポータルやSharePointなどのPDF直リンクを貼り付けてください（サーバー経由で取得します）。</p>
     </div>
+    <div class="tab-content" data-tab-content="folder" hidden>
+      <button id="folderPickBtn" class="btn" type="button">フォルダを選択</button>
+      <input type="file" id="folderInput" webkitdirectory directory multiple hidden>
+      <p class="hint warning-banner">「フォルダを選択」を押すとフォルダ選択画面のあとに、ブラウザから「〇個のファイルをこのサイトにアップロードしますか？」という確認画面が出ます。これはブラウザ標準の確認で問題ありませんので、必ず「アップロード」を選んでください（「キャンセル」を押すと取込は行われず、画面にも何も表示されません）。</p>
+      <p class="hint">フォルダ内（サブフォルダ含む）のPDFをすべて自動で取り込みます。工番はPDFの内容から判定します。既存の工番と一致した場合は、追加工事予算・今後の支出予定・備考欄を常に引き継ぎます（引き継いだ工番は次に開いたときに見直しを促す表示が出ます）。取込プレビュー確認は行われないため、あらかじめフォルダの中身をご確認ください。</p>
+      <div id="folderImportProgress" class="status" hidden></div>
+      <ul id="folderImportResultList" class="folder-import-result-list" hidden></ul>
+    </div>
 
     <p id="importStatus" class="status"></p>
 
@@ -53,6 +62,10 @@
       <h3>取込プレビュー（内容を確認・修正してから取り込んでください）</h3>
       <div class="meta-edit-grid" id="metaEditGrid"></div>
       <div class="preview-summary" id="previewSummary"></div>
+      <label id="reimportCarryOverRow" class="reimport-carry-over-row" hidden>
+        <input type="checkbox" id="reimportCarryOverCheckbox" checked>
+        追加工事契約金額・追加工事予算・今後の支出予定・備考欄の内容を、この工番の既存データから引き継ぐ（項目コードが一致するもののみ）
+      </label>
       <details>
         <summary>抽出した生テキスト（デバッグ用）</summary>
         <pre id="rawLinesView" class="raw-lines"></pre>
@@ -82,6 +95,11 @@
   <section id="mainView" class="panel" hidden>
     <div class="project-header no-print">
       <div class="project-meta-form" id="projectMetaForm"></div>
+      <div id="carriedOverNotice" class="warning-banner carried-over-notice no-print" hidden>
+        ⚠ 前回のデータから追加工事契約金額・追加工事予算・今後の支出予定・備考欄を引き継ぎました。内容を見直してください。
+        <button id="carriedOverDismissBtn" class="btn" type="button">確認しました</button>
+      </div>
+      <button id="ippanzaiWarningBtn" class="btn warning-btn" type="button" hidden></button>
       <div class="toolbar">
         <button id="saveBtn" class="btn">保存</button>
         <button id="printBtn" class="btn">A3で印刷 / PDF出力</button>
@@ -101,7 +119,6 @@
           <div class="stamp-cell"></div><div class="stamp-cell"></div><div class="stamp-cell"></div>
           <div class="stamp-cell"></div><div class="stamp-cell"></div><div class="stamp-cell"></div>
         </div>
-        <p id="sourceCitation" class="source-citation"></p>
       </div>
     </div>
 
@@ -114,11 +131,62 @@
     </div>
   </section>
 
+  <!-- 一般材警告書パネル（B_一般資材の別画面。原価計算表本体の予算残額マイナス項目をここに表示） -->
+  <section id="ippanzaiPanel" class="panel" hidden>
+    <h2 class="no-print">一般材警告書</h2>
+    <div class="project-header no-print">
+      <div class="project-meta-form" id="ippanzaiMetaForm"></div>
+      <div class="toolbar">
+        <button id="ippanzaiBackBtn" class="btn">← 原価計算表に戻る</button>
+        <button id="ippanzaiSaveBtn" class="btn">保存</button>
+        <button id="ippanzaiPrintBtn" class="btn">A3で印刷 / PDF出力</button>
+        <button id="ippanzaiCsvBtn" class="btn">CSV出力</button>
+        <span id="ippanzaiSaveStatus" class="status"></span>
+      </div>
+      <p class="hint">B_一般資材のうち予算残額がマイナスの区分に警告を表示しています。表右側の「今後の支出予定額」は原価計算表本体の「今後の支出予定」とは別の値です（上部の「一括転記」ボタンで本体の値をまとめてコピーできます）。承認条件欄は検印欄の「承認」段階に到達するまで記載できません。「保存」はこのPCへの保存に加え、検印フローと同様に任意の場所へファイル保存できます。</p>
+    </div>
+
+    <div id="ippanzaiPrintSheet">
+      <div class="bulk-transfer-row no-print">
+        <button id="ippanzaiBulkTransferBtn" class="btn" type="button">原価計算表の今後の支出予定額を全項目に一括転記</button>
+      </div>
+      <div id="ippanzaiSectionsContainer"></div>
+
+      <div class="freeform-grid">
+        <label class="approval-condition-field">承認条件
+          <span id="ippanzaiApprovalConditionHint" class="hint-inline lock-hint"></span>
+          <textarea id="ippanzaiApprovalCondition"></textarea>
+        </label>
+        <label class="over-budget-reason-field">予算オーバー見込みの理由
+          <button id="ippanzaiAppendReasonBtn" class="btn append-reason-btn no-print" type="button">予算オーバーの区分コードを追記</button>
+          <textarea id="ippanzaiOverBudgetReason"></textarea>
+        </label>
+      </div>
+
+      <div class="ippanzai-stamp-boxes">
+        <div class="stamp-col"><div class="stamp-col-label">承認</div><div class="stamp-cell"></div></div>
+        <div class="stamp-col"><div class="stamp-col-label">確認</div><div class="stamp-cell"></div></div>
+        <div class="stamp-col"><div class="stamp-col-label">確認</div><div class="stamp-cell"></div></div>
+        <div class="stamp-col"><div class="stamp-col-label">確認</div><div class="stamp-cell"></div></div>
+        <div class="stamp-col"><div class="stamp-col-label">確認</div><div class="stamp-cell"></div></div>
+        <div class="stamp-col"><div class="stamp-col-label">担当者</div><div class="stamp-cell"></div></div>
+      </div>
+    </div>
+
+    <div class="stamp-input-panel no-print">
+      <div class="stamp-input-panel-title">検印欄（一般材警告書 専用・原価計算表本体の検印とは独立）</div>
+      <p class="hint">苗字を入力すると出力の判子欄にデート印が押印されます。押印は担当者→確認→承認の順に1段ずつ解放されます。原価計算表本体の検印状態には影響しません。</p>
+      <div class="stamp-input-grid" id="ippanzaiStampInputGrid"></div>
+      <div class="stamp-flow-actions" id="ippanzaiStampFlowActions"></div>
+    </div>
+  </section>
+
 </main>
 
 <script src="vendor/pdfjs/pdf.js"></script>
-<script src="pdf-parser.js?v=20260717e"></script>
-<script src="date-stamp.js?v=20260717e"></script>
-<script src="app.js?v=20260717e"></script>
+<script src="pdf-parser.js?v=20260718k"></script>
+<script src="date-stamp.js?v=20260718k"></script>
+<script src="app.js?v=20260718k"></script>
+<script src="ippanzai-keikoku.js?v=20260718k"></script>
 </body>
 </html>

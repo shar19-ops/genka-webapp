@@ -92,6 +92,13 @@ select, input[type=text], input[type=url], input[type=number], input[type=file] 
   background: #fdecec; border: 1px solid var(--danger); border-radius: 6px;
   padding: 0.6rem 0.8rem; margin: 0 0 0.75rem;
 }
+.carried-over-notice { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.carried-over-notice[hidden] { display: none; }
+.reimport-carry-over-row {
+  display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--text);
+  background: #fff8e1; border: 1px solid #e0c34a; border-radius: 6px; padding: 0.6rem 0.8rem; margin: 0.6rem 0;
+}
+.reimport-carry-over-row[hidden] { display: none; }
 .info-banner {
   color: var(--ok); font-weight: 700; font-size: 0.9rem;
   background: #e3f7ea; border: 1px solid var(--ok); border-radius: 6px;
@@ -100,6 +107,17 @@ select, input[type=text], input[type=url], input[type=number], input[type=file] 
 .status { font-size: 0.85rem; color: var(--muted); min-height: 1.2em; }
 .status.error { color: var(--danger); }
 .status.ok { color: var(--ok); }
+
+.folder-import-result-list {
+  list-style: none; margin: 0.5rem 0 0; padding: 0; max-height: 260px; overflow-y: auto;
+  border: 1px solid var(--border); border-radius: 8px;
+}
+.folder-import-result-list li {
+  padding: 0.4rem 0.7rem; border-bottom: 1px solid var(--border); font-size: 0.82rem;
+}
+.folder-import-result-list li:last-child { border-bottom: none; }
+.folder-import-result-list li.ok { color: var(--text); }
+.folder-import-result-list li.error { color: var(--danger); }
 
 .delete-list-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.75rem 0; }
 .delete-project-list { display: flex; flex-direction: column; border-top: 1px solid var(--border); }
@@ -132,7 +150,7 @@ select, input[type=text], input[type=url], input[type=number], input[type=file] 
 .project-meta-form label { display: flex; flex-direction: column; font-size: 0.78rem; color: var(--muted); gap: 0.2rem; }
 .toolbar { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
 
-#sectionsContainer { overflow-x: auto; }
+#sectionsContainer, #ippanzaiSectionsContainer { overflow-x: auto; }
 
 table.item-table {
   border-collapse: collapse; width: 100%; min-width: 900px; font-size: 0.85rem; table-layout: fixed;
@@ -225,7 +243,6 @@ tr.usage-over td, tr.usage-over input { color: var(--danger); font-weight: 600; 
 .totals-table tr.totals-value-row td { font-weight: 700; }
 
 .stamp-boxes { display: none; }
-.source-citation { display: none; }
 
 /* 左：契約金額/実行合計/実行粗利率と、その直下に対になる追加工事系カードの3列グリッド
    （幅は内容に応じた固定サイズとし、伸長させない）。
@@ -247,6 +264,47 @@ tr.usage-over td, tr.usage-over input { color: var(--danger); font-weight: 600; 
 .badge.ok { background: #e3f7ea; color: var(--ok); }
 .badge.ng { background: #fbe7e7; color: var(--danger); }
 
+/* ---- 一般材警告書（B_一般資材の別画面） ---- */
+.warning-btn {
+  background: #fdecec; border: 1px solid var(--danger); color: var(--danger);
+  font-weight: 700; padding: 0.6rem 1rem; border-radius: 8px; font-size: 0.88rem;
+  display: flex; align-items: center; gap: 0.4rem; cursor: pointer; text-align: left;
+  width: 100%; margin: 0.75rem 0;
+}
+.warning-btn:hover { background: #fbdada; }
+.warning-btn[hidden] { display: none; }
+
+table.item-table tr.over-budget-row td { background: #fdecec !important; }
+table.item-table tr.over-budget-row td.name-cell { font-weight: 700; color: var(--danger); }
+
+.transfer-cell { display: flex; align-items: center; gap: 0.4rem; }
+.transfer-cell input.num-input { flex: 1 1 auto; }
+.transfer-btn {
+  appearance: none; border: 1px solid var(--border); background: #fff; color: var(--accent);
+  font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 5px; cursor: pointer; white-space: nowrap; flex: 0 0 auto;
+}
+.transfer-btn:hover { background: var(--header-bg); }
+.ref-value { color: var(--muted); }
+.bulk-transfer-row { display: flex; justify-content: flex-end; margin-bottom: 0.4rem; }
+
+.freeform-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; }
+.freeform-grid label { display: flex; flex-direction: column; font-size: 0.85rem; color: var(--muted); gap: 0.3rem; font-weight: 600; }
+.freeform-grid textarea {
+  font: inherit; font-size: 0.9rem; padding: 0.6rem; border: 1px solid var(--border); border-radius: 6px;
+  min-height: 110px; resize: vertical; background: #fffbe8; color: var(--text);
+}
+.freeform-grid textarea:disabled { background: #eee; color: var(--muted); }
+.freeform-grid .append-reason-btn { align-self: flex-start; font-weight: 400; }
+.freeform-grid .lock-hint { font-weight: 400; font-size: 0.78rem; }
+
+/* 一般材警告書の検印欄は原価計算表本体の.stamp-boxesと同じく、画面上は非表示で印刷時のみ表示する */
+.ippanzai-stamp-boxes { display: none; }
+.ippanzai-stamp-boxes .stamp-col { display: flex; flex-direction: column; align-items: center; }
+.ippanzai-stamp-boxes .stamp-col-label { font-size: 0.75rem; }
+
+/* 取込元PDFの見出し（一般材警告書ヘッダー右側に表示） */
+table.item-table thead tr.doc-meta-row .doc-meta-source { color: #555; font-size: 0.85em; }
+
 /* ---- iPad / タブレット向けレスポンシブ ---- */
 @media (max-width: 1024px) {
   main { padding: 0.75rem; }
@@ -255,6 +313,7 @@ tr.usage-over td, tr.usage-over input { color: var(--danger); font-weight: 600; 
   .btn, select, input { min-height: 46px; }
 }
 @media (max-width: 900px) {
+  .freeform-grid { grid-template-columns: 1fr; }
   .summary-pair-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); flex-basis: 100%; }
   .summary-final-group { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); margin-left: 0; }
 }
@@ -281,7 +340,15 @@ tr.usage-over td, tr.usage-over input { color: var(--danger); font-weight: 600; 
   table.item-table thead tr.doc-meta-row {
     display: table-row; text-align: left; font-size: 9pt; font-weight: 400;
   }
-  table.item-table thead tr.doc-meta-row th { padding: 0.5mm 1mm 1.5mm; border: none; text-align: left; }
+  table.item-table thead tr.doc-meta-row th {
+    padding: 0.5mm 1mm 1.5mm; border: none; text-align: left; overflow: visible;
+  }
+  /* th自体をdisplay:flexにするとcolspanの幅計算が崩れる（1列分の幅に縮んでしまう）
+     ブラウザの挙動があるため、th内に挟んだdivだけをflex化する */
+  table.item-table thead tr.doc-meta-row .doc-meta-row-inner {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 1em;
+  }
+  table.item-table thead tr.doc-meta-row .doc-meta-left { white-space: nowrap; }
   table.item-table thead tr.legend-row th {
     font-size: 9pt; font-weight: 700; color: #000;
     background: #fff8e1 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;
@@ -362,11 +429,74 @@ tr.usage-over td, tr.usage-over input { color: var(--danger); font-weight: 600; 
   .stamp-boxes .stamp-cell:first-child { border-left: 1px solid #000; }
 
   /* 取込元PDFの帳票見出し（"本店＊＊原価計算表＊＊ 2026.07.17 PLMT6C"のような行から
-     ページ番号を除いたもの）を、押印欄の下に出典として小さく表示する。 */
-  .source-citation {
-    display: block; margin-top: 2mm; font-size: 7.5pt; color: #555;
-    text-align: right; page-break-inside: avoid;
+     ページ番号を除いたもの）は、原価計算表・一般材警告書とも共通でヘッダー行の
+     doc-meta-source（.doc-meta-row-inner内）に右寄せ表示する（table.item-table
+     thead tr.doc-meta-row .doc-meta-source を参照）。 */
+
+  /* 一般材警告書: エクセル版（一般材使用状況一覧表）のレイアウトに合わせ、
+     項目表を左、予算オーバー見込みの理由／承認条件を右に配置し、検印欄は
+     下段に列名（承認/確認/確認/確認/確認/担当者）付きで配置する。 */
+  #ippanzaiPrintSheet {
+    display: grid; grid-template-columns: 1fr 340px; gap: 0 2mm; align-items: start;
   }
+  #ippanzaiSectionsContainer { grid-column: 1; grid-row: 1; }
+  #ippanzaiPrintSheet .freeform-grid {
+    grid-column: 2; grid-row: 1; grid-template-columns: 1fr; display: flex; flex-direction: column; gap: 4mm;
+    break-inside: avoid; margin-top: 0; transform: translate(-30mm, 13mm);
+  }
+  /* 予算オーバー見込みの理由を上、承認条件を下に（画面側は逆＝承認条件が左）なので、
+     DOM順は変えずCSSのorderだけ印刷時に入れ替える */
+  #ippanzaiPrintSheet .freeform-grid .over-budget-reason-field { order: 1; }
+  #ippanzaiPrintSheet .freeform-grid .approval-condition-field { order: 2; }
+  .ippanzai-stamp-boxes { grid-column: 1 / -1; grid-row: 2; }
+
+  /* 原価計算表本体の「今後の支出予定額」参考列は、印刷直前(beforeprintイベント)に
+     JS側(ippanzai-keikoku.js)でDOMごと除外する。table-layout:fixedの列にwidth:0を
+     指定してもブラウザが最小幅を確保して完全には消えない挙動があったため、
+     CSSだけに頼らずJSで列自体を出し分ける方式にした。列幅自体はcolgroupに
+     直接mm指定済み（JS側）なのでここでの上書きは不要。 */
+  #ippanzaiItemTable { width: auto; }
+
+  .freeform-grid .append-reason-btn, .freeform-grid .lock-hint { display: none; }
+  .freeform-grid textarea {
+    background: transparent; border: 1.5pt solid #000; color: #000; min-height: 140px;
+  }
+  /* 予算オーバー見込みの理由欄のみ高さ60mmに拡大（幅は変更しない）。
+     承認条件欄はflexの通常フローで自動的に下へ押し出される。 */
+  #ippanzaiPrintSheet .over-budget-reason-field textarea { min-height: 60mm; }
+  .transfer-btn, .bulk-transfer-row { display: none !important; }
+
+  /* 一般材警告書の明細表: 縦線は非表示、見出し行の上下線も非表示、
+     その他の横線は点線に、文字はすべて黒（警告の赤字も含む）にする。
+     今後の支出予定額の列は本体側の.col-yotei強調（背景・太枠）を打ち消し、太字のみにする。 */
+  #ippanzaiItemTable, #ippanzaiItemTable th, #ippanzaiItemTable td {
+    border-left: none !important; border-right: none !important; color: #000 !important;
+  }
+  #ippanzaiItemTable thead tr.col-header-row th {
+    border-top: none !important; border-bottom: none !important;
+  }
+  #ippanzaiItemTable tbody tr td, #ippanzaiItemTable tbody tr.subtotal-row td {
+    border-top-style: dotted !important; border-bottom-style: dotted !important;
+  }
+  #ippanzaiItemTable th.col-yotei, #ippanzaiItemTable td.col-yotei {
+    background: none !important; border-color: #999 !important; font-weight: 700;
+  }
+
+  .ippanzai-stamp-boxes {
+    display: flex; gap: 0; page-break-inside: avoid; justify-content: flex-end;
+    margin-top: 2rem; margin-right: 6cm; transform: translateY(30mm);
+  }
+  .ippanzai-stamp-boxes .stamp-col { display: flex; flex-direction: column; align-items: stretch; }
+  .ippanzai-stamp-boxes .stamp-col-label {
+    text-align: center; font-size: 8pt; font-weight: 700; border: 1px solid #000; border-left: none;
+    padding: 0.5mm 0;
+  }
+  .ippanzai-stamp-boxes .stamp-col:first-child .stamp-col-label { border-left: 1px solid #000; }
+  .ippanzai-stamp-boxes .stamp-cell {
+    width: 2cm; height: 2cm; border: 1px solid #000; border-left: none; border-top: none;
+    box-sizing: border-box; display: flex; align-items: center; justify-content: center;
+  }
+  .ippanzai-stamp-boxes .stamp-col:first-child .stamp-cell { border-left: 1px solid #000; }
 
   @page {
     size: A3 landscape; margin: 12mm;

@@ -336,6 +336,7 @@ function renderDeleteProjectList() {
 function openDeletePanel() {
   $('#importPanel').hidden = true;
   $('#mainView').hidden = true;
+  $('#ippanzaiPanel').hidden = true;
   $('#deletePanel').hidden = false;
   $('#deleteStatus').textContent = '';
   renderDeleteProjectList();
@@ -431,6 +432,121 @@ $('#urlFetchBtn').addEventListener('click', async () => {
   }
 });
 
+// ---------------- インポート: フォルダ一括取込 ----------------
+$('#folderPickBtn').addEventListener('click', () => { $('#folderInput').click(); });
+$('#folderInput').addEventListener('change', async (e) => {
+  // input.filesはinput.valueのリセットに連動して空になるライブ参照のため、
+  // 配列へ変換して中身を確定させてからvalueをリセットする（順序を間違えると
+  // 常に0件になる）。
+  const files = Array.from(e.target.files || []);
+  e.target.value = '';
+  const progressEl = $('#folderImportProgress');
+  if (!files.length) {
+    // OneDriveの「このデバイス上に空き容量を増やす」等でファイルが「オンラインのみ」に
+    // なっていると、ブラウザのフォルダ選択でファイルが1件も検出できないことがある。
+    progressEl.hidden = false;
+    progressEl.textContent = 'フォルダからファイルを検出できませんでした。OneDrive等のクラウド同期フォルダの場合、対象ファイルが「オンラインのみ」（未ダウンロード）になっていないかご確認ください（右クリック→「常にこのデバイスに保持する」）。';
+    progressEl.className = 'status error';
+    return;
+  }
+  try {
+    await processFolderImport(files);
+  } catch (err) {
+    progressEl.hidden = false;
+    progressEl.textContent = '一括取込中にエラーが発生しました: ' + err.message;
+    progressEl.className = 'status error';
+  }
+});
+
+async function processFolderImport(fileList) {
+  const pdfFiles = Array.from(fileList).filter((f) => /\.pdf$/i.test(f.name));
+  const progressEl = $('#folderImportProgress');
+  const listEl = $('#folderImportResultList');
+  progressEl.hidden = false;
+  listEl.hidden = false;
+  listEl.innerHTML = '';
+
+  if (!pdfFiles.length) {
+    progressEl.textContent = 'フォルダ内にPDFファイルが見つかりませんでした。';
+    progressEl.className = 'status error';
+    return;
+  }
+
+  const results = [];
+  for (let i = 0; i < pdfFiles.length; i++) {
+    const file = pdfFiles[i];
+    progressEl.textContent = `取込中... (${i + 1}/${pdfFiles.length}) ${file.name}`;
+    progressEl.className = 'status';
+    try {
+      const buf = await file.arrayBuffer();
+      const result = await GenkaPdfParser.parsePdf(buf);
+      const itemCount = result.sections.reduce((s, sec) => s + sec.items.length, 0);
+      const koban = result.meta.koban;
+      if (!koban) {
+        results.push({ file: file.name, ok: false, message: '工番を検出できませんでした' });
+        continue;
+      }
+      if (itemCount === 0) {
+        results.push({ file: file.name, ok: false, message: '項目データを検出できませんでした' });
+        continue;
+      }
+
+      // フォルダ一括取込では既存工番と一致した場合、常に前回データ（追加工事契約金額・
+      // 追加工事予算・今後の支出予定・備考欄）を引き継ぐ（1件ごとの確認は行わない）。
+      const previousProject = loadProject(koban);
+      const previousItemState = {};
+      if (previousProject) {
+        previousProject.sections.forEach((sec) => sec.items.forEach((it) => {
+          previousItemState[it.code] = { yoteiShishutsu: it.yoteiShishutsu, tsuikaKoji: it.tsuikaKoji, memo: it.memo };
+        }));
+      }
+      const carriedOverNotice = Object.keys(previousItemState).length > 0;
+
+      const project = {
+        koban,
+        tokuisaki: result.meta.tokuisaki,
+        kenmei: result.meta.kenmei,
+        koki: result.meta.koki,
+        kanseiKeijougetsu: result.meta.kanseiKeijougetsu,
+        tantou: result.meta.tantou,
+        han: result.meta.han,
+        keiyakuKingaku: result.footer.keiyakuKingaku ?? null,
+        nyukinGaku: result.footer.nyukinGaku ?? null,
+        tsuikaKoujiKeiyaku: previousProject?.tsuikaKoujiKeiyaku ?? null,
+        stampSlots: previousProject?.stampSlots ?? null,
+        stampFlow: previousProject?.stampFlow ?? null,
+        carriedOverNotice,
+        sections: result.sections.map((sec) => ({
+          label: sec.label,
+          items: sec.items.map((it) => ({
+            ...it,
+            yoteiShishutsu: previousItemState[it.code]?.yoteiShishutsu ?? it.yoteiShishutsuFromPdf ?? 0,
+            tsuikaKoji: previousItemState[it.code]?.tsuikaKoji ?? 0,
+            memo: previousItemState[it.code]?.memo ?? '',
+          })),
+        })),
+        sourceInfo: { type: 'folder', name: file.name },
+        sourceHeader: result.sourceHeader,
+      };
+
+      saveProject(project);
+      if (currentProject && currentProject.koban === koban) currentProject = project;
+      results.push({ file: file.name, ok: true, koban, carried: carriedOverNotice, itemCount });
+    } catch (err) {
+      results.push({ file: file.name, ok: false, message: err.message });
+    }
+  }
+
+  const successCount = results.filter((r) => r.ok).length;
+  const failCount = results.length - successCount;
+  progressEl.textContent = `完了: ${pdfFiles.length}件中 ${successCount}件を取込みました${failCount ? `（${failCount}件失敗）` : ''}。`;
+  progressEl.className = 'status' + (failCount ? ' error' : ' ok');
+  listEl.innerHTML = results.map((r) => `
+    <li class="${r.ok ? 'ok' : 'error'}">
+      ${r.ok ? '✓' : '✗'} ${escapeHtml(r.file)}${r.ok ? `（工番 ${escapeHtml(r.koban)}、${r.itemCount}件${r.carried ? '・既存データを引き継ぎ' : ''}）` : `：${escapeHtml(r.message)}`}
+    </li>`).join('');
+}
+
 function setStatus(msg, isError = false) {
   const el = $('#importStatus');
   el.textContent = msg;
@@ -473,7 +589,9 @@ function renderPreview(result) {
   $('#previewSummary').textContent =
     `区分数: ${result.sections.length} / 項目数: ${itemCount} 件` +
     (hasPdfYotei ? '（このPDFには「今後の支出予定」列が含まれています。初期値として取り込みます）' : '') +
-    (reimportTargetKoban ? `（工番「${reimportTargetKoban}」への再取込：既存の支出予定・メモは項目コードが一致すれば引き継がれます）` : '');
+    (reimportTargetKoban ? `（工番「${reimportTargetKoban}」への再取込）` : '');
+
+  $('#reimportCarryOverRow').hidden = !reimportTargetKoban;
 
   $('#rawLinesView').textContent = result.rawLines.join('\n');
 }
@@ -482,6 +600,7 @@ $('#cancelImportBtn').addEventListener('click', () => {
   pendingParseResult = null;
   reimportTargetKoban = null;
   $('#previewArea').hidden = true;
+  $('#reimportCarryOverRow').hidden = true;
   setStatus('');
 });
 
@@ -501,17 +620,24 @@ $('#commitImportBtn').addEventListener('click', () => {
     return;
   }
 
+  // 引継ぎするかどうかはユーザーが選択（再取込時のみ表示されるチェックボックス）。
+  // 新規取込（reimportTargetKobanなし）の場合は引き継ぐ元データが無いため常にfalse扱い。
+  const carryOver = !!reimportTargetKoban && ($('#reimportCarryOverCheckbox')?.checked ?? true);
+
   let previousItemState = {};
   let previousProject = null;
   if (reimportTargetKoban) {
     const prev = loadProject(reimportTargetKoban);
     if (prev) {
       previousProject = prev;
-      prev.sections.forEach((sec) => sec.items.forEach((it) => {
-        previousItemState[it.code] = { yoteiShishutsu: it.yoteiShishutsu, tsuikaKoji: it.tsuikaKoji, memo: it.memo };
-      }));
+      if (carryOver) {
+        prev.sections.forEach((sec) => sec.items.forEach((it) => {
+          previousItemState[it.code] = { yoteiShishutsu: it.yoteiShishutsu, tsuikaKoji: it.tsuikaKoji, memo: it.memo };
+        }));
+      }
     }
   }
+  const carriedOverNotice = carryOver && Object.keys(previousItemState).length > 0;
 
   const project = {
     koban,
@@ -523,14 +649,15 @@ $('#commitImportBtn').addEventListener('click', () => {
     han: metaOverrides.han,
     keiyakuKingaku: metaOverrides.keiyakuKingaku,
     nyukinGaku: metaOverrides.nyukinGaku,
-    tsuikaKoujiKeiyaku: previousProject?.tsuikaKoujiKeiyaku ?? null,
+    tsuikaKoujiKeiyaku: carryOver ? (previousProject?.tsuikaKoujiKeiyaku ?? null) : null,
     stampSlots: previousProject?.stampSlots ?? null,
     stampFlow: previousProject?.stampFlow ?? null,
+    carriedOverNotice,
     sections: pendingParseResult.sections.map((sec) => ({
       label: sec.label,
       items: sec.items.map((it) => ({
         ...it,
-        // 優先順位: 同工番への再取込時の既存入力 > PDFに既に記録されている支出予定値 > 0
+        // 優先順位: 同工番への再取込時の既存入力（引継ぎを選んだ場合のみ） > PDFに既に記録されている支出予定値 > 0
         yoteiShishutsu: previousItemState[it.code]?.yoteiShishutsu ?? it.yoteiShishutsuFromPdf ?? 0,
         tsuikaKoji: previousItemState[it.code]?.tsuikaKoji ?? 0,
         memo: previousItemState[it.code]?.memo ?? '',
@@ -545,6 +672,7 @@ $('#commitImportBtn').addEventListener('click', () => {
   pendingParseResult = null;
   reimportTargetKoban = null;
   $('#previewArea').hidden = true;
+  $('#reimportCarryOverRow').hidden = true;
   $('#fileInput').value = '';
   $('#urlInput').value = '';
   setStatus('取り込みました。');
@@ -566,6 +694,7 @@ $('#newImportBtn').addEventListener('click', () => {
   reimportTargetKoban = null;
   $('#mainView').hidden = true;
   $('#deletePanel').hidden = true;
+  $('#ippanzaiPanel').hidden = true;
   $('#importPanel').hidden = false;
   $('#importPanel').scrollIntoView({ behavior: 'smooth' });
 });
@@ -578,10 +707,17 @@ $('#reimportBtn').addEventListener('click', () => {
   setStatus(`工番「${reimportTargetKoban}」に新しいPDFを取り込みます。`);
 });
 
+$('#carriedOverDismissBtn').addEventListener('click', () => {
+  currentProject.carriedOverNotice = false;
+  $('#carriedOverNotice').hidden = true;
+  scheduleAutosave();
+});
+
 // ---------------- メイン表示 ----------------
 function showMainView() {
   $('#importPanel').hidden = true;
   $('#deletePanel').hidden = true;
+  $('#ippanzaiPanel').hidden = true;
   $('#mainView').hidden = false;
   renderMainView();
 }
@@ -619,6 +755,8 @@ function sumSection(items) {
 
 function renderMainView() {
   const p = currentProject;
+
+  $('#carriedOverNotice').hidden = !p.carriedOverNotice;
 
   $('#projectMetaForm').innerHTML = [
     ['koban', '工番'], ['kenmei', '件名'], ['tokuisaki', '得意先名'],
@@ -664,6 +802,8 @@ function renderMainView() {
     `工事担当: ${escapeHtml(p.tantou || '')}`,
     `工事班: ${escapeHtml(p.han || '')}`,
   ].join('　　');
+  const sourceCiteHtml = p.sourceHeader
+    ? `<span class="doc-meta-source">引用元：「${escapeHtml(p.sourceHeader)}」より</span>` : '';
 
   // 全区分をひとつの表にまとめ、theadに「タイトル＋工番等＋列見出し」を入れる。
   // theadはページをまたぐたびにブラウザが自動的に繰り返し表示するため、
@@ -680,7 +820,7 @@ function renderMainView() {
       </colgroup>
       <thead>
         <tr class="doc-title-row"><th colspan="10">＊＊ 原　価　計　算　表 ＊＊</th></tr>
-        <tr class="doc-meta-row"><th colspan="10">${metaLine}</th></tr>
+        <tr class="doc-meta-row"><th colspan="10"><div class="doc-meta-row-inner"><span class="doc-meta-left">${metaLine}</span>${sourceCiteHtml}</div></th></tr>
         <tr class="legend-row"><th colspan="10">凡例：使用率90％以上の項目は<span class="legend-blue">青字</span>、100％を超えた項目は<span class="legend-red">赤字</span>で表示しています。</th></tr>
         <tr class="col-header-row">
           <th class="name-col">項目名</th>
@@ -694,7 +834,6 @@ function renderMainView() {
   renderTotalsAndSummary();
   renderStampInputs();
   renderStampBoxes();
-  $('#sourceCitation').textContent = p.sourceHeader ? `引用元：「${p.sourceHeader}」より` : '';
 }
 
 function renderSections() {
@@ -900,6 +1039,9 @@ function renderTotalsAndSummary() {
   $('#summaryCards').innerHTML = `
     <div class="summary-pair-grid">${pairCards.map(cardHtml).join('')}</div>
     <div class="summary-final-group">${finalCards.map(cardHtml).join('')}</div>`;
+
+  // B_一般資材の予算残額マイナス項目があれば一般材警告書ボタンを表示する（ippanzai-keikoku.js側で定義）
+  if (typeof updateIppanzaiWarningButton === 'function') updateIppanzaiWarningButton();
 }
 
 // ---------------- 保存（自動保存 + 手動保存） ----------------
