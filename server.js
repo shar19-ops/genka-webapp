@@ -56,5 +56,5 @@ function pipeUpstream(upstream, res) {
 }
 
 app.listen(PORT, () => {
-  console.log(`原価計算表アプリ起動: http://localhost:${PORT}`);
+  console.log(`原価計算書アプリ起動: http://localhost:${PORT}`);
 });

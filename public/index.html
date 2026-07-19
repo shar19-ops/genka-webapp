@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
-<title>原価計算表アプリ</title>
+<title>原価計算書アプリ</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#2f6fed">
-<link rel="stylesheet" href="style.css?v=20260718k">
+<link rel="stylesheet" href="style.css?v=20260719a">
 </head>
 <body>
 <header class="topbar">
-  <h1>原価計算表アプリ <span class="app-version">v20260718a</span></h1>
+  <h1>原価計算書アプリ <span class="app-version">v20260719a</span></h1>
   <div class="topbar-actions">
     <label class="field-inline">
       工番を開く
@@ -38,11 +38,11 @@
 
     <div class="tab-content" data-tab-content="file">
       <input type="file" id="fileInput" accept="application/pdf">
-      <p class="hint">PC/iPadの原価計算表PDFを選択してください。</p>
+      <p class="hint">PC/iPadの原価計算書PDFを選択してください。</p>
     </div>
     <div class="tab-content" data-tab-content="url" hidden>
       <div class="url-row">
-        <input type="url" id="urlInput" placeholder="https://.../原価計算表.pdf">
+        <input type="url" id="urlInput" placeholder="https://.../原価計算書.pdf">
         <button id="urlFetchBtn" class="btn">取得する</button>
       </div>
       <p class="hint">社内ポータルやSharePointなどのPDF直リンクを貼り付けてください（サーバー経由で取得します）。</p>
@@ -131,24 +131,24 @@
     </div>
   </section>
 
-  <!-- 一般材警告書パネル（B_一般資材の別画面。原価計算表本体の予算残額マイナス項目をここに表示） -->
+  <!-- 一般材警告書パネル（B_一般資材の別画面。原価計算書本体の予算残額マイナス項目をここに表示） -->
   <section id="ippanzaiPanel" class="panel" hidden>
     <h2 class="no-print">一般材警告書</h2>
     <div class="project-header no-print">
       <div class="project-meta-form" id="ippanzaiMetaForm"></div>
       <div class="toolbar">
-        <button id="ippanzaiBackBtn" class="btn">← 原価計算表に戻る</button>
+        <button id="ippanzaiBackBtn" class="btn">← 原価計算書に戻る</button>
         <button id="ippanzaiSaveBtn" class="btn">保存</button>
         <button id="ippanzaiPrintBtn" class="btn">A3で印刷 / PDF出力</button>
         <button id="ippanzaiCsvBtn" class="btn">CSV出力</button>
         <span id="ippanzaiSaveStatus" class="status"></span>
       </div>
-      <p class="hint">B_一般資材のうち予算残額がマイナスの区分に警告を表示しています。表右側の「今後の支出予定額」は原価計算表本体の「今後の支出予定」とは別の値です（上部の「一括転記」ボタンで本体の値をまとめてコピーできます）。承認条件欄は検印欄の「承認」段階に到達するまで記載できません。「保存」はこのPCへの保存に加え、検印フローと同様に任意の場所へファイル保存できます。</p>
+      <p class="hint">B_一般資材のうち予算残額がマイナスの区分に警告を表示しています。表右側の「今後の支出予定額」は原価計算書本体の「今後の支出予定」とは別の値です（上部の「一括転記」ボタンで本体の値をまとめてコピーできます）。承認条件欄は検印欄の「承認」段階に到達するまで記載できません。「保存」はこのPCへの保存に加え、検印フローと同様に任意の場所へファイル保存できます。</p>
     </div>
 
     <div id="ippanzaiPrintSheet">
       <div class="bulk-transfer-row no-print">
-        <button id="ippanzaiBulkTransferBtn" class="btn" type="button">原価計算表の今後の支出予定額を全項目に一括転記</button>
+        <button id="ippanzaiBulkTransferBtn" class="btn" type="button">原価計算書の今後の支出予定額を全項目に一括転記</button>
       </div>
       <div id="ippanzaiSectionsContainer"></div>
 
@@ -174,8 +174,8 @@
     </div>
 
     <div class="stamp-input-panel no-print">
-      <div class="stamp-input-panel-title">検印欄（一般材警告書 専用・原価計算表本体の検印とは独立）</div>
-      <p class="hint">苗字を入力すると出力の判子欄にデート印が押印されます。押印は担当者→確認→承認の順に1段ずつ解放されます。原価計算表本体の検印状態には影響しません。</p>
+      <div class="stamp-input-panel-title">検印欄（一般材警告書 専用・原価計算書本体の検印とは独立）</div>
+      <p class="hint">苗字を入力すると出力の判子欄にデート印が押印されます。押印は担当者→確認→承認の順に1段ずつ解放されます。原価計算書本体の検印状態には影響しません。</p>
       <div class="stamp-input-grid" id="ippanzaiStampInputGrid"></div>
       <div class="stamp-flow-actions" id="ippanzaiStampFlowActions"></div>
     </div>
@@ -184,9 +184,9 @@
 </main>
 
 <script src="vendor/pdfjs/pdf.js"></script>
-<script src="pdf-parser.js?v=20260718k"></script>
-<script src="date-stamp.js?v=20260718k"></script>
-<script src="app.js?v=20260718k"></script>
-<script src="ippanzai-keikoku.js?v=20260718k"></script>
+<script src="pdf-parser.js?v=20260719a"></script>
+<script src="date-stamp.js?v=20260719a"></script>
+<script src="app.js?v=20260719a"></script>
+<script src="ippanzai-keikoku.js?v=20260719a"></script>
 </body>
 </html>

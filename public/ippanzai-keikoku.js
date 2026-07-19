@@ -1,5 +1,5 @@
 // ---------------- 一般材警告書（B_一般資材の別画面） ----------------
-// 原価計算表アプリ本体（app.js）の currentProject / $ / $$ / yen / escapeHtml / scheduleAutosave /
+// 原価計算書アプリ本体（app.js）の currentProject / $ / $$ / yen / escapeHtml / scheduleAutosave /
 // saveProject / STAMP_SLOT_COUNT / STAMP_TITLES / STAMP_TITLE_COLOR / STAMP_SLOT_LABELS /
 // STAMP_STATE_BADGE / newStampSlot / buildStampDataUrl / todayIso / sanitizeFilename / csvEscape /
 // closeAppWindow / showMainView をそのまま利用する（app.js より後に読み込まれる前提）。
@@ -8,7 +8,7 @@
 const IPPANZAI_B_SECTION_LABEL = 'B_一般資材';
 // 今後要望があれば true に戻すだけで、行ごとの「転記」ボタンを再表示できる
 const IPPANZAI_SHOW_ROW_TRANSFER = false;
-// 印刷時は「原価計算表の今後の支出予定額」参考列をDOMごと除外する。
+// 印刷時は「原価計算書の今後の支出予定額」参考列をDOMごと除外する。
 // table-layout:fixed の列に width:0 を指定してもブラウザが最小幅を確保してしまい
 // 完全には消えないため、CSSだけでなくJS側で列自体を出し分ける。
 let ippanzaiPrintMode = false;
@@ -118,7 +118,7 @@ function renderIppanzaiPanel() {
   const showRef = !ippanzaiPrintMode;
   const colCount = showRef ? 9 : 8;
   const refColHtml = showRef ? '<col class="col-refyotei" style="width:40mm">' : '';
-  const refThHtml = showRef ? '<th class="col-refyotei">原価計算表の<br>今後の支出予定額</th>' : '';
+  const refThHtml = showRef ? '<th class="col-refyotei">原価計算書の<br>今後の支出予定額</th>' : '';
 
   const container = $('#ippanzaiSectionsContainer');
   container.innerHTML = `
@@ -214,7 +214,7 @@ function renderIppanzaiRows() {
       ${refTd}
       <td class="col-yotei transfer-cell">
         <input type="text" inputmode="numeric" class="num-input" data-field="keikokuYoteiShishutsu" value="${yen(it.keikokuYoteiShishutsu ?? 0)}">
-        ${IPPANZAI_SHOW_ROW_TRANSFER ? `<button type="button" class="transfer-btn no-print" data-item="${idx}" title="原価計算表の今後の支出予定額をコピー">転記</button>` : ''}
+        ${IPPANZAI_SHOW_ROW_TRANSFER ? `<button type="button" class="transfer-btn no-print" data-item="${idx}" title="原価計算書の今後の支出予定額をコピー">転記</button>` : ''}
       </td>
       <td class="sabikigo-cell ${calced.keikokuSabikigo < 0 ? 'neg' : ''}">${yen(calced.keikokuSabikigo)}</td>
     </tr>`;
@@ -300,7 +300,7 @@ function ippanzaiPrevRealStage(stage) {
 }
 
 // ファイル名規則: 工番_一般材警告書_日付(YYYY-MM-DD)_苗字.json （苗字は提出者本人の欄が空欄なら空欄のまま。
-// 原価計算表本体のbuildExportFilename()と対称のルール）
+// 原価計算書本体のbuildExportFilename()と対称のルール）
 function buildIppanzaiExportFilename(project, submitterName) {
   const koban = sanitizeFilename(project.koban || '');
   const date = todayIso();
@@ -522,7 +522,7 @@ $('#ippanzaiCsvBtn')?.addEventListener('click', exportIppanzaiCsv);
 $('#ippanzaiBulkTransferBtn')?.addEventListener('click', transferAllIppanzai);
 $('#ippanzaiAppendReasonBtn')?.addEventListener('click', appendOverBudgetCodesToReason);
 
-// 印刷直前に「原価計算表の今後の支出予定額」参考列をDOMから除外し、印刷後に戻す
+// 印刷直前に「原価計算書の今後の支出予定額」参考列をDOMから除外し、印刷後に戻す
 window.addEventListener('beforeprint', () => {
   if (!$('#ippanzaiPanel') || $('#ippanzaiPanel').hidden) return;
   ippanzaiPrintMode = true;

@@ -297,7 +297,7 @@ table.item-table tr.over-budget-row td.name-cell { font-weight: 700; color: var(
 .freeform-grid .append-reason-btn { align-self: flex-start; font-weight: 400; }
 .freeform-grid .lock-hint { font-weight: 400; font-size: 0.78rem; }
 
-/* 一般材警告書の検印欄は原価計算表本体の.stamp-boxesと同じく、画面上は非表示で印刷時のみ表示する */
+/* 一般材警告書の検印欄は原価計算書本体の.stamp-boxesと同じく、画面上は非表示で印刷時のみ表示する */
 .ippanzai-stamp-boxes { display: none; }
 .ippanzai-stamp-boxes .stamp-col { display: flex; flex-direction: column; align-items: center; }
 .ippanzai-stamp-boxes .stamp-col-label { font-size: 0.75rem; }
@@ -429,7 +429,7 @@ table.item-table thead tr.doc-meta-row .doc-meta-source { color: #555; font-size
   .stamp-boxes .stamp-cell:first-child { border-left: 1px solid #000; }
 
   /* 取込元PDFの帳票見出し（"本店＊＊原価計算表＊＊ 2026.07.17 PLMT6C"のような行から
-     ページ番号を除いたもの）は、原価計算表・一般材警告書とも共通でヘッダー行の
+     ページ番号を除いたもの）は、原価計算書・一般材警告書とも共通でヘッダー行の
      doc-meta-source（.doc-meta-row-inner内）に右寄せ表示する（table.item-table
      thead tr.doc-meta-row .doc-meta-source を参照）。 */
 
@@ -450,7 +450,7 @@ table.item-table thead tr.doc-meta-row .doc-meta-source { color: #555; font-size
   #ippanzaiPrintSheet .freeform-grid .approval-condition-field { order: 2; }
   .ippanzai-stamp-boxes { grid-column: 1 / -1; grid-row: 2; }
 
-  /* 原価計算表本体の「今後の支出予定額」参考列は、印刷直前(beforeprintイベント)に
+  /* 原価計算書本体の「今後の支出予定額」参考列は、印刷直前(beforeprintイベント)に
      JS側(ippanzai-keikoku.js)でDOMごと除外する。table-layout:fixedの列にwidth:0を
      指定してもブラウザが最小幅を確保して完全には消えない挙動があったため、
      CSSだけに頼らずJSで列自体を出し分ける方式にした。列幅自体はcolgroupに

@@ -1,7 +1,7 @@
 {
-  "name": "原価計算表アプリ",
-  "short_name": "原価計算表",
-  "description": "雄電社 原価計算表のデジタル入力・検印・A3印刷アプリ",
+  "name": "原価計算書アプリ",
+  "short_name": "原価計算書",
+  "description": "雄電社 原価計算書のデジタル入力・検印・A3印刷アプリ",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

@@ -1078,7 +1078,7 @@ $('#csvBtn').addEventListener('click', () => {
   const blob = new Blob([csv], { type: 'text/csv' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `原価計算表_${p.koban}.csv`;
+  a.download = `原価計算書_${p.koban}.csv`;
   a.click();
   URL.revokeObjectURL(a.href);
 });
@@ -1154,7 +1154,7 @@ async function openProjectFromFile(file) {
     const text = await file.text();
     const project = JSON.parse(text);
     if (!project || typeof project !== 'object' || !project.koban || !Array.isArray(project.sections)) {
-      throw new Error('原価計算表のデータファイルではないようです');
+      throw new Error('原価計算書のデータファイルではないようです');
     }
     currentProject = project;
     saveProject(currentProject);
