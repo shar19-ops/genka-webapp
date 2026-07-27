@@ -62,9 +62,13 @@
       <h3>取込プレビュー（内容を確認・修正してから取り込んでください）</h3>
       <div class="meta-edit-grid" id="metaEditGrid"></div>
       <div class="preview-summary" id="previewSummary"></div>
-      <label id="reimportCarryOverRow" class="reimport-carry-over-row" hidden>
-        <input type="checkbox" id="reimportCarryOverCheckbox" checked>
-        追加工事契約金額・追加工事予算・今後の支出予定・備考欄の内容を、この工番の既存データから引き継ぐ（項目コードが一致するもののみ）
+      <label id="reimportCarryOverYoteiRow" class="reimport-carry-over-row" hidden>
+        <input type="checkbox" id="reimportCarryOverYoteiCheckbox" checked>
+        今後の支出予定・備考欄の内容を、この工番の既存データから引き継ぐ（項目コードが一致するもののみ）
+      </label>
+      <label id="reimportCarryOverTsuikaRow" class="reimport-carry-over-row" hidden>
+        <input type="checkbox" id="reimportCarryOverTsuikaCheckbox" checked>
+        追加工事契約金額・追加工事予算の内容を、この工番の既存データから引き継ぐ（項目コードが一致するもののみ）
       </label>
       <details>
         <summary>抽出した生テキスト（デバッグ用）</summary>
@@ -96,7 +100,7 @@
     <div class="project-header no-print">
       <div class="project-meta-form" id="projectMetaForm"></div>
       <div id="carriedOverNotice" class="warning-banner carried-over-notice no-print" hidden>
-        ⚠ 前回のデータから追加工事契約金額・追加工事予算・今後の支出予定・備考欄を引き継ぎました。内容を見直してください。
+        <span id="carriedOverNoticeText"></span>
         <button id="carriedOverDismissBtn" class="btn" type="button">確認しました</button>
       </div>
       <button id="ippanzaiWarningBtn" class="btn warning-btn" type="button" hidden></button>

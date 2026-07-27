@@ -500,7 +500,8 @@ async function processFolderImport(fileList) {
           previousItemState[it.code] = { yoteiShishutsu: it.yoteiShishutsu, tsuikaKoji: it.tsuikaKoji, memo: it.memo };
         }));
       }
-      const carriedOverNotice = Object.keys(previousItemState).length > 0;
+      const hasPreviousItemState = Object.keys(previousItemState).length > 0;
+      const carriedOverNotice = { yotei: hasPreviousItemState, tsuika: hasPreviousItemState };
 
       const project = {
         koban,
@@ -531,7 +532,7 @@ async function processFolderImport(fileList) {
 
       saveProject(project);
       if (currentProject && currentProject.koban === koban) currentProject = project;
-      results.push({ file: file.name, ok: true, koban, carried: carriedOverNotice, itemCount });
+      results.push({ file: file.name, ok: true, koban, carried: hasPreviousItemState, itemCount });
     } catch (err) {
       results.push({ file: file.name, ok: false, message: err.message });
     }
@@ -591,7 +592,8 @@ function renderPreview(result) {
     (hasPdfYotei ? '（このPDFには「今後の支出予定」列が含まれています。初期値として取り込みます）' : '') +
     (reimportTargetKoban ? `（工番「${reimportTargetKoban}」への再取込）` : '');
 
-  $('#reimportCarryOverRow').hidden = !reimportTargetKoban;
+  $('#reimportCarryOverYoteiRow').hidden = !reimportTargetKoban;
+  $('#reimportCarryOverTsuikaRow').hidden = !reimportTargetKoban;
 
   $('#rawLinesView').textContent = result.rawLines.join('\n');
 }
@@ -600,7 +602,8 @@ $('#cancelImportBtn').addEventListener('click', () => {
   pendingParseResult = null;
   reimportTargetKoban = null;
   $('#previewArea').hidden = true;
-  $('#reimportCarryOverRow').hidden = true;
+  $('#reimportCarryOverYoteiRow').hidden = true;
+  $('#reimportCarryOverTsuikaRow').hidden = true;
   setStatus('');
 });
 
@@ -620,9 +623,10 @@ $('#commitImportBtn').addEventListener('click', () => {
     return;
   }
 
-  // 引継ぎするかどうかはユーザーが選択（再取込時のみ表示されるチェックボックス）。
+  // 引継ぎするかどうかはユーザーが選択（再取込時のみ表示される2つのチェックボックス）。
   // 新規取込（reimportTargetKobanなし）の場合は引き継ぐ元データが無いため常にfalse扱い。
-  const carryOver = !!reimportTargetKoban && ($('#reimportCarryOverCheckbox')?.checked ?? true);
+  const carryOverYotei = !!reimportTargetKoban && ($('#reimportCarryOverYoteiCheckbox')?.checked ?? true);
+  const carryOverTsuika = !!reimportTargetKoban && ($('#reimportCarryOverTsuikaCheckbox')?.checked ?? true);
 
   let previousItemState = {};
   let previousProject = null;
@@ -630,14 +634,16 @@ $('#commitImportBtn').addEventListener('click', () => {
     const prev = loadProject(reimportTargetKoban);
     if (prev) {
       previousProject = prev;
-      if (carryOver) {
-        prev.sections.forEach((sec) => sec.items.forEach((it) => {
-          previousItemState[it.code] = { yoteiShishutsu: it.yoteiShishutsu, tsuikaKoji: it.tsuikaKoji, memo: it.memo };
-        }));
-      }
+      prev.sections.forEach((sec) => sec.items.forEach((it) => {
+        previousItemState[it.code] = { yoteiShishutsu: it.yoteiShishutsu, tsuikaKoji: it.tsuikaKoji, memo: it.memo };
+      }));
     }
   }
-  const carriedOverNotice = carryOver && Object.keys(previousItemState).length > 0;
+  const hasPreviousItemState = Object.keys(previousItemState).length > 0;
+  const carriedOverNotice = {
+    yotei: carryOverYotei && hasPreviousItemState,
+    tsuika: carryOverTsuika && hasPreviousItemState,
+  };
 
   const project = {
     koban,
@@ -649,7 +655,7 @@ $('#commitImportBtn').addEventListener('click', () => {
     han: metaOverrides.han,
     keiyakuKingaku: metaOverrides.keiyakuKingaku,
     nyukinGaku: metaOverrides.nyukinGaku,
-    tsuikaKoujiKeiyaku: carryOver ? (previousProject?.tsuikaKoujiKeiyaku ?? null) : null,
+    tsuikaKoujiKeiyaku: carryOverTsuika ? (previousProject?.tsuikaKoujiKeiyaku ?? null) : null,
     stampSlots: previousProject?.stampSlots ?? null,
     stampFlow: previousProject?.stampFlow ?? null,
     carriedOverNotice,
@@ -658,9 +664,9 @@ $('#commitImportBtn').addEventListener('click', () => {
       items: sec.items.map((it) => ({
         ...it,
         // 優先順位: 同工番への再取込時の既存入力（引継ぎを選んだ場合のみ） > PDFに既に記録されている支出予定値 > 0
-        yoteiShishutsu: previousItemState[it.code]?.yoteiShishutsu ?? it.yoteiShishutsuFromPdf ?? 0,
-        tsuikaKoji: previousItemState[it.code]?.tsuikaKoji ?? 0,
-        memo: previousItemState[it.code]?.memo ?? '',
+        yoteiShishutsu: carryOverYotei ? (previousItemState[it.code]?.yoteiShishutsu ?? it.yoteiShishutsuFromPdf ?? 0) : (it.yoteiShishutsuFromPdf ?? 0),
+        tsuikaKoji: carryOverTsuika ? (previousItemState[it.code]?.tsuikaKoji ?? 0) : 0,
+        memo: carryOverYotei ? (previousItemState[it.code]?.memo ?? '') : '',
       })),
     })),
     sourceInfo: pendingParseResult.sourceInfo,
@@ -672,7 +678,8 @@ $('#commitImportBtn').addEventListener('click', () => {
   pendingParseResult = null;
   reimportTargetKoban = null;
   $('#previewArea').hidden = true;
-  $('#reimportCarryOverRow').hidden = true;
+  $('#reimportCarryOverYoteiRow').hidden = true;
+  $('#reimportCarryOverTsuikaRow').hidden = true;
   $('#fileInput').value = '';
   $('#urlInput').value = '';
   setStatus('取り込みました。');
@@ -753,10 +760,35 @@ function sumSection(items) {
   return totals;
 }
 
+// carriedOverNotice: 分割前(旧データ)は真偽値、分割後は {yotei, tsuika} のオブジェクト。
+// 旧データ(true)は両方引き継いだものとして扱う(後方互換)。
+function carriedOverNoticeFlags(project) {
+  const notice = project.carriedOverNotice;
+  if (!notice) return { yotei: false, tsuika: false };
+  if (notice === true) return { yotei: true, tsuika: true };
+  return { yotei: !!notice.yotei, tsuika: !!notice.tsuika };
+}
+
+function carriedOverNoticeText(flags) {
+  if (flags.yotei && flags.tsuika) {
+    return '⚠ 前回のデータから今後の支出予定・備考欄、追加工事契約金額・追加工事予算を引き継ぎました。内容を見直してください。';
+  }
+  if (flags.yotei) {
+    return '⚠ 前回のデータから今後の支出予定・備考欄を引き継ぎました。内容を見直してください。';
+  }
+  if (flags.tsuika) {
+    return '⚠ 前回のデータから追加工事契約金額・追加工事予算を引き継ぎました。内容を見直してください。';
+  }
+  return '';
+}
+
 function renderMainView() {
   const p = currentProject;
 
-  $('#carriedOverNotice').hidden = !p.carriedOverNotice;
+  const carriedOverFlags = carriedOverNoticeFlags(p);
+  const carriedOverAny = carriedOverFlags.yotei || carriedOverFlags.tsuika;
+  $('#carriedOverNotice').hidden = !carriedOverAny;
+  if (carriedOverAny) $('#carriedOverNoticeText').textContent = carriedOverNoticeText(carriedOverFlags);
 
   $('#projectMetaForm').innerHTML = [
     ['koban', '工番'], ['kenmei', '件名'], ['tokuisaki', '得意先名'],
