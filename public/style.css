@@ -207,6 +207,11 @@ table.item-table input.custom-name-input { width: 100%; min-width: 120px; text-a
   #mainItemTable td.col-tsuika input.num-input:focus, #mainItemTable td.col-yotei input.num-input:focus {
     border-color: #c46a00; box-shadow: 0 0 0 2px rgba(232, 160, 74, 0.35);
   }
+  /* 上部の「予定追加工事契約金額（任意入力）」欄も同じ配色にそろえる */
+  #projectMetaForm input[data-proj="tsuikaKoujiKeiyaku"] { background: #fff1dc; border: 1.5px solid #e8a04a; }
+  #projectMetaForm input[data-proj="tsuikaKoujiKeiyaku"]:focus {
+    outline: none; border-color: #c46a00; box-shadow: 0 0 0 2px rgba(232, 160, 74, 0.35);
+  }
 }
 .neg { color: var(--danger); font-weight: 600; }
 /* 使用率 = (原価合計＋今後の支出予定)÷(実行合計＋追加工事予算)。90%以上は青字、100%超過は赤字。

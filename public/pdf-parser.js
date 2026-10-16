@@ -205,6 +205,60 @@
     return meta;
   }
 
+  // ---- 新帳票（2026年10月〜。旧帳票と当分混在して運用する） ----
+  // 見出しが「工番： P0260010  得意先  工期  担当」「件名： …」「契約金額： …」の
+  // ラベル付き1行形式で、(小計)の文言がなく、項目行の直下に数値だけの小計行が並ぶ。
+  // 工事班・完成計上月の欄は無い。
+  const NEW_KOBAN_LABEL_RE = /^工番[:：]/;
+  const DATE_TOKEN_RE = /^\d{4}\/\d{1,2}\/\d{1,2}/;
+
+  function isNewFormat(rows) {
+    return rows.some((r) => NEW_KOBAN_LABEL_RE.test(r.text.replace(/\s/g, '')));
+  }
+
+  // 「工番：」行のセルを左から順に、工番 → 得意先名 → 工期（日付～日付） → 工事担当 として読む
+  function parseNewFormatMeta(rows) {
+    const meta = { koban: '', tokuisaki: '', kenmei: '', kanseiKeijougetsu: '', koki: '', tantou: '', han: '' };
+    const kobanRow = rows.find((r) => NEW_KOBAN_LABEL_RE.test(r.text.replace(/\s/g, '')));
+    if (kobanRow) {
+      const tokens = kobanRow.cells.map((c) => c.str.trim()).filter(Boolean);
+      // ラベルと工番が同じセルの場合（"工番： P0260010"）と別セルの場合の両方に対応
+      const first = tokens.shift().replace(/^工番[:：]\s*/, '');
+      meta.koban = (first || tokens.shift() || '').replace(/\s/g, '');
+      const dateIdx = tokens.findIndex((t) => DATE_TOKEN_RE.test(t));
+      const tokuisakiTokens = dateIdx >= 0 ? tokens.slice(0, dateIdx) : tokens;
+      meta.tokuisaki = tokuisakiTokens.join('').replace(/\s/g, '');
+      if (dateIdx >= 0) {
+        let i = dateIdx;
+        const kokiTokens = [];
+        while (i < tokens.length && /^[\d/～~\s]+$/.test(tokens[i])) kokiTokens.push(tokens[i++]);
+        meta.koki = kokiTokens.join('').replace(/\s/g, '');
+        meta.tantou = tokens.slice(i).join('').replace(/\s/g, '');
+      }
+    }
+    const kenmeiRow = rows.find((r) => /^件名[:：]/.test(r.text.replace(/\s/g, '')));
+    if (kenmeiRow) meta.kenmei = kenmeiRow.text.replace(/^\s*件\s*名\s*[:：]\s*/, '').trim();
+    return meta;
+  }
+
+  function parseNewFormatKeiyaku(rows) {
+    const row = rows.find((r) => /^契約金額[:：]/.test(r.text.replace(/\s/g, '')));
+    if (!row) return null;
+    const nums = extractNumbers(row.text);
+    return nums.length ? nums[0].value : null;
+  }
+
+  // 新帳票の小計行は項目名の無い数値だけの行
+  function isNumberOnlyLine(line) {
+    return /^[\d,\-\s]+$/.test(line) && extractNumbers(line).length >= 4;
+  }
+
+  // 新帳票は1ページ目先頭の「原価計算表  2026/10/7」行を引用元として表示する
+  function extractNewFormatSourceHeader(page1Rows) {
+    const row = (page1Rows || []).find((r) => /^原価計算表/.test(r.text.replace(/\s/g, '')));
+    return row ? row.text.replace(/\s+/g, ' ').trim() : null;
+  }
+
   function parseFooterNumbers(lines) {
     const footer = { keiyakuKingaku: null, nyukinGaku: null, nyukinZangaku: null, percentages: [] };
     for (const line of lines) {
@@ -242,7 +296,8 @@
     const usablePages = branchPageIdx >= 0 ? pagesRows.slice(0, branchPageIdx) : pagesRows;
     const allRows = usablePages.flat();
     const allLines = allRows.map((r) => r.text);
-    const sourceHeader = extractSourceHeader(page1Rows);
+    const newFormat = isNewFormat(allRows);
+    const sourceHeader = newFormat ? extractNewFormatSourceHeader(page1Rows) : extractSourceHeader(page1Rows);
 
     // ヘッダーのラベル行（"工番"と"得意先名"を含む行）の直後を値行とみなし、
     // x座標を基準に列を振り分けてメタ情報を取り出す。
@@ -254,7 +309,9 @@
       const compact = r.text.replace(/\s/g, '');
       return compact.includes('工番') && compact.includes('得意先名');
     });
-    if (labelRowIdx >= 0 && allRows[labelRowIdx + 1]) {
+    if (newFormat) {
+      meta = parseNewFormatMeta(allRows);
+    } else if (labelRowIdx >= 0 && allRows[labelRowIdx + 1]) {
       const columns = extractMetaByColumns(allRows[labelRowIdx], allRows[labelRowIdx + 1]);
       if (columns) {
         meta = buildMetaFromColumns(columns);
@@ -271,7 +328,7 @@
     const sectionBreaks = []; // 各(小計)行が出た時点でのitems配列長を記録
 
     for (const line of allLines) {
-      if (isSubtotalLine(line)) {
+      if (isSubtotalLine(line) || (newFormat && isNumberOnlyLine(line))) {
         sectionBreaks.push(items.length);
         continue;
       }
@@ -281,6 +338,7 @@
     }
 
     const footer = parseFooterNumbers(allLines);
+    if (newFormat) footer.keiyakuKingaku = parseNewFormatKeiyaku(allRows);
 
     // (小計)の区切りをもとに項目を4グループへ分割したうえで、
     // 3番目のグループ（現場経費O00＋工事費K/L系）は現場経費(O00のみ)と
@@ -292,6 +350,11 @@
       start = end;
     });
     if (start < items.length) rawGroups.push(items.slice(start));
+    // 新帳票は現場経費(O00)と工事費(K/L系)にそれぞれ小計が付き別グループになるため、
+    // 旧帳票と同じ「3番目のグループ＝O00＋工事費」の形にまとめてから区分を割り当てる。
+    if (newFormat && rawGroups.length >= 4 && rawGroups[2].every((it) => it.code === 'O00')) {
+      rawGroups.splice(2, 2, [...rawGroups[2], ...rawGroups[3]]);
+    }
 
     const sections = [];
     const pushIfAny = (label, groupItems) => {
