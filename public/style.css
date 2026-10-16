@@ -49,18 +49,24 @@ main { max-width: 1400px; margin: 0 auto; padding: 1rem; }
 }
 .panel h2 { margin-top: 0; font-size: 1.05rem; }
 
+/* 白いパネル上で埋もれないよう、通常ボタンも淡い青の塗り＋濃い枠線＋影で立体的に見せる */
 .btn {
   appearance: none;
-  border: 1px solid var(--border);
-  background: #fff;
+  border: 1px solid #9fb3e0;
+  background: #e6edfb;
+  color: var(--accent-dark);
+  font-weight: 600;
   padding: 0.55rem 1rem;
   border-radius: 8px;
   font-size: 0.9rem;
   cursor: pointer;
   min-height: 44px;
+  box-shadow: 0 1px 2px rgba(30, 79, 184, 0.18);
 }
-.btn:hover { background: #f0f2f5; }
-a.btn { display: inline-flex; align-items: center; text-decoration: none; color: var(--text); }
+.btn:hover { background: #d3defa; border-color: var(--accent); }
+.btn:active { box-shadow: none; transform: translateY(1px); }
+.btn:disabled { background: #f0f2f5; border-color: var(--border); color: var(--muted); box-shadow: none; cursor: not-allowed; }
+a.btn { display: inline-flex; align-items: center; text-decoration: none; color: var(--accent-dark); }
 .btn.primary { background: var(--accent); border-color: var(--accent-dark); color: #fff; }
 .btn.primary:hover { background: var(--accent-dark); }
 .btn.danger { background: #fff; border-color: var(--danger); color: var(--danger); }
@@ -188,6 +194,25 @@ table.item-table input.num-input:focus,
 table.item-table input.custom-name-input:focus { border-color: var(--accent); outline: none; }
 table.item-table input[type=text].memo-input,
 table.item-table input.custom-name-input { width: 100%; min-width: 120px; text-align: left; background: #fffbe8; border: 1px solid transparent; }
+/* 任意入力の「追加工事予算」「今後の支出予定」列は、他の列と区別できるよう
+   列全体を淡いオレンジ、入力欄を白地＋オレンジ枠にする。印刷側は@media print内の
+   グレー背景・黒太枠の指定があるため、画面表示のみに限定する。 */
+@media screen {
+  #mainItemTable th.col-tsuika, #mainItemTable th.col-yotei { background: #fbd9a6; }
+  #mainItemTable td.col-tsuika, #mainItemTable td.col-yotei { background: #fff1dc; }
+  #mainItemTable tr.subtotal-row td.col-tsuika, #mainItemTable tr.subtotal-row td.col-yotei { background: #fde3bd; }
+  #mainItemTable td.col-tsuika input.num-input, #mainItemTable td.col-yotei input.num-input {
+    background: #fff; border: 1.5px solid #e8a04a; border-radius: 4px; padding: 0.15rem 0.3rem;
+  }
+  #mainItemTable td.col-tsuika input.num-input:focus, #mainItemTable td.col-yotei input.num-input:focus {
+    border-color: #c46a00; box-shadow: 0 0 0 2px rgba(232, 160, 74, 0.35);
+  }
+  /* 上部の「予定追加工事契約金額（任意入力）」欄も同じ配色にそろえる */
+  #projectMetaForm input[data-proj="tsuikaKoujiKeiyaku"] { background: #fff1dc; border: 1.5px solid #e8a04a; }
+  #projectMetaForm input[data-proj="tsuikaKoujiKeiyaku"]:focus {
+    outline: none; border-color: #c46a00; box-shadow: 0 0 0 2px rgba(232, 160, 74, 0.35);
+  }
+}
 .neg { color: var(--danger); font-weight: 600; }
 /* 使用率 = (原価合計＋今後の支出予定)÷(実行合計＋追加工事予算)。90%以上は青字、100%超過は赤字。
    画面・印刷の両方に適用するため@media printでは分けず、ここに1つだけ定義する。 */
