@@ -401,6 +401,15 @@ $$('.tab-btn').forEach((btn) => {
   }
 })();
 
+// 取込ファイルがExcel（OBIC7のテンプレート出力）かPDFかを判定して、対応するパーサーで解析する。
+// どちらも同じ形（meta/footer/sections/rawLines/sourceHeader）の結果を返す。
+function parseImportFile(arrayBuffer, name) {
+  return GenkaXlsxParser.isXlsx(arrayBuffer, name)
+    ? GenkaXlsxParser.parseXlsx(arrayBuffer)
+    : GenkaPdfParser.parsePdf(arrayBuffer);
+}
+const IMPORT_FILE_RE = /\.(pdf|xlsx)$/i;
+
 // ---------------- インポート: ファイル ----------------
 $('#fileInput').addEventListener('change', async (e) => {
   const file = e.target.files[0];
@@ -410,7 +419,7 @@ $('#fileInput').addEventListener('change', async (e) => {
     const buf = await file.arrayBuffer();
     await runParse(buf, { type: 'file', name: file.name });
   } catch (err) {
-    setStatus('PDFの解析に失敗しました: ' + err.message, true);
+    setStatus('ファイルの解析に失敗しました: ' + err.message, true);
   }
 });
 
@@ -459,7 +468,8 @@ $('#folderInput').addEventListener('change', async (e) => {
 });
 
 async function processFolderImport(fileList) {
-  const pdfFiles = Array.from(fileList).filter((f) => /\.pdf$/i.test(f.name));
+  // Excelは開いている間に作られるロック用の一時ファイル（~$で始まる）を除外する
+  const pdfFiles = Array.from(fileList).filter((f) => IMPORT_FILE_RE.test(f.name) && !f.name.startsWith('~$'));
   const progressEl = $('#folderImportProgress');
   const listEl = $('#folderImportResultList');
   progressEl.hidden = false;
@@ -467,7 +477,7 @@ async function processFolderImport(fileList) {
   listEl.innerHTML = '';
 
   if (!pdfFiles.length) {
-    progressEl.textContent = 'フォルダ内にPDFファイルが見つかりませんでした。';
+    progressEl.textContent = 'フォルダ内にPDF・Excelファイルが見つかりませんでした。';
     progressEl.className = 'status error';
     return;
   }
@@ -479,7 +489,7 @@ async function processFolderImport(fileList) {
     progressEl.className = 'status';
     try {
       const buf = await file.arrayBuffer();
-      const result = await GenkaPdfParser.parsePdf(buf);
+      const result = await parseImportFile(buf, file.name);
       const itemCount = result.sections.reduce((s, sec) => s + sec.items.length, 0);
       const koban = result.meta.koban;
       if (!koban) {
@@ -555,10 +565,10 @@ function setStatus(msg, isError = false) {
 }
 
 async function runParse(arrayBuffer, sourceInfo) {
-  const result = await GenkaPdfParser.parsePdf(arrayBuffer);
+  const result = await parseImportFile(arrayBuffer, sourceInfo.name);
   const itemCount = result.sections.reduce((s, sec) => s + sec.items.length, 0);
   if (itemCount === 0) {
-    setStatus('項目データを検出できませんでした。PDFの形式をご確認ください。', true);
+    setStatus('項目データを検出できませんでした。PDF・Excelの形式をご確認ください。', true);
     return;
   }
   pendingParseResult = { ...result, sourceInfo };
@@ -619,7 +629,7 @@ $('#commitImportBtn').addEventListener('click', () => {
   const koban = metaOverrides.koban || pendingParseResult.meta.koban || `未設定-${Date.now()}`;
 
   if (reimportTargetKoban && koban !== reimportTargetKoban) {
-    setStatus(`工番が一致しないため取込を中断しました（再取込先: 「${reimportTargetKoban}」／PDFの工番: 「${koban}」）。別の工番のPDFを読み込んでいないか確認してください。`, true);
+    setStatus(`工番が一致しないため取込を中断しました（再取込先: 「${reimportTargetKoban}」／取込ファイルの工番: 「${koban}」）。別の工番のファイルを読み込んでいないか確認してください。`, true);
     return;
   }
 
@@ -711,7 +721,7 @@ $('#reimportBtn').addEventListener('click', () => {
   $('#deletePanel').hidden = true;
   $('#importPanel').hidden = false;
   $('#importPanel').scrollIntoView({ behavior: 'smooth' });
-  setStatus(`工番「${reimportTargetKoban}」に新しいPDFを取り込みます。`);
+  setStatus(`工番「${reimportTargetKoban}」に新しいPDF・Excelを取り込みます。`);
 });
 
 $('#carriedOverDismissBtn').addEventListener('click', () => {
