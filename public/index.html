@@ -6,17 +6,17 @@
 <title>原価計算書アプリ</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#2f6fed">
-<link rel="stylesheet" href="style.css?v=20261016a">
+<link rel="stylesheet" href="style.css?v=20261102a">
 </head>
 <body>
 <header class="topbar">
-  <h1>原価計算書アプリ <span class="app-version">v20261016a</span></h1>
+  <h1>原価計算書アプリ <span class="app-version">v20261102a</span></h1>
   <div class="topbar-actions">
     <label class="field-inline">
       工番を開く
       <select id="projectSelect"><option value="">-- 保存済みの工番を選択 --</option></select>
     </label>
-    <button id="newImportBtn" class="btn">PDFを読み込む</button>
+    <button id="newImportBtn" class="btn">PDF・Excelを読み込む</button>
     <button id="openFileBtn" class="btn">ファイルを開く</button>
     <input type="file" id="openFileInput" accept=".json,application/json" hidden>
     <button id="manageProjectsBtn" class="btn">工番を削除</button>
@@ -28,8 +28,8 @@
 
   <!-- 取込パネル -->
   <section id="importPanel" class="panel">
-    <h2>PDF取込</h2>
-    <p class="info-banner">枝番を含んだPDFでもそのまま取込みが可能になりました。</p>
+    <h2>PDF・Excel取込</h2>
+    <p class="info-banner">OBIC7から出力した原価計算書のExcel（.xlsx）も取込みできるようになりました（従来のPDFもそのまま取込めます）。</p>
     <div class="tabs">
       <button class="tab-btn active" data-tab="file">ファイルから読み込む</button>
       <button class="tab-btn" data-tab="url">URLから読み込む</button>
@@ -37,8 +37,8 @@
     </div>
 
     <div class="tab-content" data-tab-content="file">
-      <input type="file" id="fileInput" accept="application/pdf">
-      <p class="hint">PC/iPadの原価計算書PDFを選択してください。</p>
+      <input type="file" id="fileInput" accept="application/pdf,.pdf,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+      <p class="hint">PC/iPadの原価計算書PDF、またはOBIC7から出力した原価計算書Excel（.xlsx）を選択してください。</p>
     </div>
     <div class="tab-content" data-tab-content="url" hidden>
       <div class="url-row">
@@ -51,7 +51,7 @@
       <button id="folderPickBtn" class="btn" type="button">フォルダを選択</button>
       <input type="file" id="folderInput" webkitdirectory directory multiple hidden>
       <p class="hint warning-banner">「フォルダを選択」を押すとフォルダ選択画面のあとに、ブラウザから「〇個のファイルをこのサイトにアップロードしますか？」という確認画面が出ます。これはブラウザ標準の確認で問題ありませんので、必ず「アップロード」を選んでください（「キャンセル」を押すと取込は行われず、画面にも何も表示されません）。</p>
-      <p class="hint">フォルダ内（サブフォルダ含む）のPDFをすべて自動で取り込みます。工番はPDFの内容から判定します。既存の工番と一致した場合は、追加工事予算・今後の支出予定・備考欄を常に引き継ぎます（引き継いだ工番は次に開いたときに見直しを促す表示が出ます）。取込プレビュー確認は行われないため、あらかじめフォルダの中身をご確認ください。</p>
+      <p class="hint">フォルダ内（サブフォルダ含む）のPDF・Excel（.xlsx）をすべて自動で取り込みます。工番はファイルの内容から判定します。既存の工番と一致した場合は、追加工事予算・今後の支出予定・備考欄を常に引き継ぎます（引き継いだ工番は次に開いたときに見直しを促す表示が出ます）。取込プレビュー確認は行われないため、あらかじめフォルダの中身をご確認ください。</p>
       <div id="folderImportProgress" class="status" hidden></div>
       <ul id="folderImportResultList" class="folder-import-result-list" hidden></ul>
     </div>
@@ -108,7 +108,7 @@
         <button id="saveBtn" class="btn">保存</button>
         <button id="printBtn" class="btn">A3で印刷 / PDF出力</button>
         <button id="csvBtn" class="btn">CSV出力</button>
-        <button id="reimportBtn" class="btn">この工番にPDFを再取込</button>
+        <button id="reimportBtn" class="btn">この工番にPDF・Excelを再取込</button>
         <span id="saveStatus" class="status"></span>
       </div>
       <p class="hint">「保存」を押すと、このPCへの保存に加えて任意の場所へファイル保存できます。検印欄の「確認者へ提出」「承認者へ提出」「差し戻す」もファイル保存を兼ねています。保存したファイルをTeamsやメールに添付して次の方へ送ってください。受け取った方はこのアプリを開き、上部の「ファイルを開く」（または対応ブラウザでは添付ファイルをダブルクリック）で読み込めます。</p>
@@ -188,9 +188,11 @@
 </main>
 
 <script src="vendor/pdfjs/pdf.js"></script>
-<script src="pdf-parser.js?v=20261016a"></script>
-<script src="date-stamp.js?v=20261016a"></script>
-<script src="app.js?v=20261016a"></script>
-<script src="ippanzai-keikoku.js?v=20261016a"></script>
+<script src="vendor/sheetjs/xlsx.mini.min.js"></script>
+<script src="pdf-parser.js?v=20261102a"></script>
+<script src="xlsx-parser.js?v=20261102a"></script>
+<script src="date-stamp.js?v=20261102a"></script>
+<script src="app.js?v=20261102a"></script>
+<script src="ippanzai-keikoku.js?v=20261102a"></script>
 </body>
 </html>
