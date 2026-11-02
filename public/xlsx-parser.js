@@ -8,7 +8,8 @@
   const SECTION_LABELS = {
     A: 'A_主要資材', B: 'B_一般資材', O: 'O_現場経費', C: 'C_労務', D: 'D_その他',
   };
-  const CODE_RE = /^[A-Z0-9][0-9A-Z][0-9A-Z]$/;
+  // OBIC7では3桁（Z50等）のほか、5桁の細目コード（K5002 店舗・事務所工料 等）もある
+  const CODE_RE = /^[A-Z0-9]{3,5}$/;
   const HEADER_LABELS = {
     code: 'コード', name: '項目名', jikkou: '実行合計', genka: '原価合計',
     shiharai: '支払額', miharai: '未払額', yosanZangaku: '予算残高',
@@ -183,10 +184,25 @@
     };
   }
 
+  // OBIC7出力のExcelはシートの範囲情報（!ref）が1ページ目（A1:O50）までしか入っておらず、
+  // そのまま読むと2ページ目以降の項目が欠落する。実際に存在するセルから範囲を計算し直す。
+  function fixSheetRange(ws) {
+    let maxR = 0;
+    let maxC = 0;
+    Object.keys(ws).forEach((key) => {
+      if (key[0] === '!') return;
+      const { r, c } = XLSX.utils.decode_cell(key);
+      if (r > maxR) maxR = r;
+      if (c > maxC) maxC = c;
+    });
+    ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: maxR, c: maxC } });
+  }
+
   async function parseXlsx(arrayBuffer) {
     const wb = XLSX.read(arrayBuffer, { type: 'array', cellDates: true });
     // 「コード」「実行合計」の見出しがある最初のシートを対象にする
     for (const name of wb.SheetNames) {
+      fixSheetRange(wb.Sheets[name]);
       const rows = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: true, defval: null, blankrows: true });
       const result = parseSheet(rows);
       if (result) {
