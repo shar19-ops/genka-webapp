@@ -159,18 +159,29 @@ select, input[type=text], input[type=url], input[type=number], input[type=file] 
 #printBtn, #ippanzaiPrintBtn { order: 1; margin-left: auto; }
 
 #sectionsContainer, #ippanzaiSectionsContainer { overflow-x: auto; }
-/* 項目が多いとスクロールで列見出し（項目名・実行合計…）が見えなくなるため、画面表示では
-   表の枠を画面の高さに収めて枠内でスクロールさせ、列見出し行を枠の上端に固定する。
-   （横スクロール用にoverflowを指定した枠の中では、ページ全体のスクロールに対して
-   見出しを固定できないため、枠自体を縦スクロールさせる方式にしている） */
+/* スクロールしても列見出し（項目名・実行合計…）が見えるよう、見出し行を上端に固定する。 */
 @media screen {
-  #sectionsContainer, #ippanzaiSectionsContainer {
-    overflow: auto; max-height: calc(100vh - 1.5rem); max-height: calc(100dvh - 1.5rem);
-  }
   table.item-table thead tr.col-header-row th {
     position: sticky; top: 0; z-index: 2;
     box-shadow: inset 0 -2px 0 #9fb3e0; /* 固定中も下端の区切りが見えるように */
   }
+}
+/* PC幅: 表が横にはみ出さないので枠のoverflowを外し、見出しをブラウザ画面の上端に固定する。
+   overflowを指定した枠の中ではstickyがその枠にしか効かず、ページのスクロールで見出しごと
+   画面外へ流れてしまうため。一般材警告書の表は幅が1072px固定なので、収まる1150px以上で外す。 */
+@media screen and (min-width: 1000px) {
+  #sectionsContainer { overflow: visible; }
+}
+@media screen and (min-width: 1150px) {
+  #ippanzaiSectionsContainer { overflow: visible; }
+}
+/* 狭い画面: 表が横スクロールになりoverflowを外せないので、枠を画面の高さに収めて枠内を
+   スクロールさせ、枠の上端に見出しを固定する。 */
+@media screen and (max-width: 999.98px) {
+  #sectionsContainer { overflow: auto; max-height: calc(100vh - 1.5rem); max-height: calc(100dvh - 1.5rem); }
+}
+@media screen and (max-width: 1149.98px) {
+  #ippanzaiSectionsContainer { overflow: auto; max-height: calc(100vh - 1.5rem); max-height: calc(100dvh - 1.5rem); }
 }
 
 table.item-table {
